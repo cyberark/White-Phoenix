@@ -14,6 +14,7 @@ def argparse():
                         help="Path to encrypted PDF file")
     parser.add_argument("-o", "--output", required=True, dest="output", metavar="FOLDER",
                         help="Path to folder to save extracted content")
+    parser.add_argument("-t", "--type", required=True, dest="type", help="Type of encrypted file")
     return parser.parse_args()
 
 
