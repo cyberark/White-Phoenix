@@ -5,7 +5,7 @@ import logging
 
 
 def main():
-    args = pdf_parsers.argparse()
+    args = utils.argparse()
     utils.init_logger()
     utils.verify_output(args.output)
     file_type = str.lower(args.type)

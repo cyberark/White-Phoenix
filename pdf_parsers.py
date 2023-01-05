@@ -1,21 +1,7 @@
 import logging
 import utils
 import re
-from argparse import ArgumentParser
 
-
-def argparse():
-    """
-    parse the argument to find path of file to extract info from
-    :return: arguments
-    """
-    parser = ArgumentParser(description="Recover text and images from partially encrypted PDF files")
-    parser.add_argument("-f", "--file", required=True, dest="filename", metavar="FILE",
-                        help="Path to encrypted PDF file")
-    parser.add_argument("-o", "--output", required=True, dest="output", metavar="FOLDER",
-                        help="Path to folder to save extracted content")
-    parser.add_argument("-t", "--type", required=True, dest="type", help="Type of encrypted file")
-    return parser.parse_args()
 
 
 def parse_to_objects(filename):
