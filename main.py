@@ -1,17 +1,17 @@
-import parsers
+import pdf_parsers
 import utils
-import extractors
+from pdf_extractor import pdf_extractor
 import logging
 
 
 def main():
-    args = parsers.argparse()
+    args = pdf_parsers.argparse()
     utils.init_logger()
     utils.verify_output(args.output)
     file_type = str.lower(args.type)
     if file_type == 'pdf':
-        pdf_objects = parsers.parse_to_objects(args.filename)
-        extractors.extract_content(pdf_objects, args.output)
+        extractor = pdf_extractor(args.filename, args.output)
+        extractor.extract_content()
     else:
         logging.error("file Type not supported")
 
