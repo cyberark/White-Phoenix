@@ -1,13 +1,12 @@
 import logging
 from extractor import Extractor
 import zipfile
-import utils
 import os
 
 
 class ZipExtractor(Extractor):
-    def __init__(self, filename, output):
-        super().__init__(filename, output)
+    def __init__(self, file_content, output):
+        super().__init__(file_content, output)
 
     def extract_content(self):
         """
@@ -21,8 +20,7 @@ class ZipExtractor(Extractor):
         """
         create a temporary file that can be parsed by zipfile
         """
-        content = utils.read_file(self.filename)
-        tmp = content[content.find(b"PK\x03\x04"):]
+        tmp = self.file_content[self.file_content.find(b"PK\x03\x04"):]
         logging.info("Creating temp file in output folder")
         with open(self.output + "/tmp", "wb") as f:
             f.write(tmp)

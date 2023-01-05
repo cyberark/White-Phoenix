@@ -24,7 +24,11 @@ def supported_file_type(file_type):
     :param file_type: the given file type
     :return: true if file type is supported, false otherwise
     """
-    supported_types = ['pdf', 'docx', 'xlsx', 'pptx', 'zip']
+    supported_types = ['pdf', 
+    'docx', 'docm', 'dotx', 'dotm', 'odt',
+    'xlsx', 'xlsm', 'xltx', 'xltm', 'xlsb', 'xlam', 'ods'
+    'pptx', 'pptm', 'ptox', 'potm', 'ppsx', 'ppsm', 'odp'
+    'zip', 'jar', 'apk']
     if file_type not in supported_types:
         logging.error("file Type not supported")
     return

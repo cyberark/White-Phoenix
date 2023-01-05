@@ -2,8 +2,8 @@ import abc
 
 
 class Extractor:
-    def __init__(self, filename, output):
-        self.filename = filename
+    def __init__(self, file_content, output):
+        self.file_content = file_content
         self.output = output
 
     @abc.abstractmethod

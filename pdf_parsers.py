@@ -3,14 +3,13 @@ import utils
 import re
 
 
-def parse_to_objects(filename):
+def parse_to_objects(content):
     """
     Find all pdf objects that weren't encrypted
-    :param filename: the path to the encrypted pdf file
+    :param content: the content of the encrypted pdf file
     :return: pdfs_object dictionary containing all the objects successfully extracted from the pdf
     """
 
-    content = utils.read_file(filename)
     pdf_objects = dict()
 
     # regex to find start of pdf object "\d+ 0 obj" followed by content of object followed by end of object "endobj"

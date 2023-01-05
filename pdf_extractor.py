@@ -6,8 +6,8 @@ from extractor import Extractor
 
 
 class PdfExtractor(Extractor):
-    def __init__(self, filename, output):
-        super().__init__(filename, output)
+    def __init__(self, file_content, output):
+        super().__init__(file_content, output)
         self.mapped_objects = dict()
         self.cmap_objects = dict()
         self.mapping_keys = dict()
@@ -17,7 +17,7 @@ class PdfExtractor(Extractor):
         Loop through pdf objects to find objects with interesting content
         :return:
         """
-        pdf_objects = pdf_parsers.parse_to_objects(self.filename)
+        pdf_objects = pdf_parsers.parse_to_objects(self.file_content)
         for obj_num in pdf_objects:
             obj = pdf_objects[obj_num]
             if (re.search(rb"/Subtype\s*/Image", obj)) and b"stream" in obj:
