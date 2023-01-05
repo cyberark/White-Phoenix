@@ -6,3 +6,10 @@ Usage:
     -f/--file : path to the encrypted file
     -o/--output : path to folder to save the content extracted from the file
     -t/--type : type of encrypted file
+
+Currently supported filetypes include:
+    'pdf', 
+    'docx', 'docm', 'dotx', 'dotm', 'odt',
+    'xlsx', 'xlsm', 'xltx', 'xltm', 'xlsb', 'xlam', 'ods'
+    'pptx', 'pptm', 'ptox', 'potm', 'ppsx', 'ppsm', 'odp'
+    'zip', 'jar', 'apk'
