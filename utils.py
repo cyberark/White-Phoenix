@@ -3,6 +3,7 @@ import logging
 import os
 from argparse import ArgumentParser
 
+
 def argparse():
     """
     parse the argument to find path of file to extract info from
@@ -15,6 +16,18 @@ def argparse():
                         help="Path to folder to save extracted content")
     parser.add_argument("-t", "--type", required=True, dest="type", help="Type of encrypted file")
     return parser.parse_args()
+
+
+def supported_file_type(file_type):
+    """
+    check if filetype is supported
+    :param file_type: the given file type
+    :return: true if file type is supported, false otherwise
+    """
+    supported_types = ['pdf', 'docx', 'xlsx', 'pptx', 'zip']
+    if file_type not in supported_types:
+        logging.error("file Type not supported")
+    return
 
 
 def verify_output(output_path):

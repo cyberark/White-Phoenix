@@ -1,7 +1,6 @@
-import pdf_parsers
 import utils
-from pdf_extractor import pdf_extractor
-import logging
+from pdf_extractor import PdfExtractor
+from zip_extractor import ZipExtractor
 
 
 def main():
@@ -9,12 +8,13 @@ def main():
     utils.init_logger()
     utils.verify_output(args.output)
     file_type = str.lower(args.type)
-    if file_type == 'pdf':
-        extractor = pdf_extractor(args.filename, args.output)
-        extractor.extract_content()
-    else:
-        logging.error("file Type not supported")
+    utils.supported_file_type(file_type)
 
+    if file_type == 'pdf':
+        extractor = PdfExtractor(args.filename, args.output)
+    else:
+        extractor = ZipExtractor(args.filename, args.output)
+    extractor.extract_content()
 
 
 if __name__ == '__main__':

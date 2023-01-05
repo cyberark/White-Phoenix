@@ -2,15 +2,15 @@ import re
 import binascii
 import utils
 import pdf_parsers
-from extractor import extractor
+from extractor import Extractor
 
-class pdf_extractor(extractor):
+
+class PdfExtractor(Extractor):
     def __init__(self, filename, output):
         super().__init__(filename, output)
         self.mapped_objects = dict()
         self.cmap_objects = dict()
         self.mapping_keys = dict()
-
 
     def extract_content(self):
         """
@@ -29,7 +29,6 @@ class pdf_extractor(extractor):
             for obj_num in self.mapped_objects:
                 self.extract_text_mapped(obj_num)
 
-
     def extract_stream_image(self, pdf_object, obj_num):
         """
         extract image from pdf object
@@ -43,7 +42,6 @@ class pdf_extractor(extractor):
         # check content exists and isn't "junk" starting with null bytes
         if image_content is not None and image_content[:4] != b"\x00" * 4:
             utils.write_file(obj_num, image_content, self.output, "image")
-
 
     def inspect_flate_object(self, pdf_object, obj_num):
         """
@@ -63,7 +61,6 @@ class pdf_extractor(extractor):
                     self.mapped_objects[obj_num] = text_content
             elif b"beginbfchar" in text_content:
                 self.cmap_objects[obj_num] = pdf_parsers.parse_cmap(text_content)
-
 
     def extract_text_unmapped(self, obj_num, text_content):
         """
@@ -85,7 +82,6 @@ class pdf_extractor(extractor):
 
         if len(extracted_text.strip()) > 0:
             utils.write_file(obj_num, extracted_text, self.output, "text")
-
 
     def extract_text_mapped(self, obj_num):
         """
@@ -110,7 +106,6 @@ class pdf_extractor(extractor):
             extracted_text = binascii.unhexlify(unmapped_content).replace(b"\x00", b"")
             if len(extracted_text) > 0:
                 utils.write_file(obj_num, extracted_text, self.output, "text", cmap=cmap)
-
 
     def get_mapped_keys(self, mapped_content, cmap):
         """

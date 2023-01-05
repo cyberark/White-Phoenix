@@ -3,7 +3,6 @@ import utils
 import re
 
 
-
 def parse_to_objects(filename):
     """
     Find all pdf objects that weren't encrypted

@@ -1,11 +1,11 @@
-from abc import abstractclassmethod
+import abc
 
 
-class extractor:
+class Extractor:
     def __init__(self, filename, output):
         self.filename = filename
         self.output = output
 
-    @abstractclassmethod
-    def extract_content():
+    @abc.abstractmethod
+    def extract_content(self):
         pass
