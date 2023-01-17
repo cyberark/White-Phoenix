@@ -15,6 +15,6 @@ Currently supported filetypes include:
     'zip'
 
 Successfully tested on:
-    BlackCat/ALPHV Ransomware, Play Ransomware, Qilin/Agenda Ransomware
+    BlackCat/ALPHV Ransomware, Play Ransomware, Qilin/Agenda Ransomware, BianLian Ransomware
 
 Please note: This tool is not 100% effective and has a greater chance of success for larger files
