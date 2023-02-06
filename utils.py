@@ -31,6 +31,7 @@ def supported_file_type(file_type):
     'zip']
     if file_type not in supported_types:
         logging.error("file Type not supported")
+        exit(-1)
     return
 
 
