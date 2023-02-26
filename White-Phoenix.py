@@ -1,6 +1,6 @@
 import utils
-from extractors.pdf_extractor.py import PdfExtractor
-from extractors.zip_extractor.py import ZipExtractor
+from extractors.pdf_extractor import PdfExtractor
+from extractors.zip_extractor import ZipExtractor
 
 
 def main():
