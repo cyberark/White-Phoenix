@@ -5,17 +5,6 @@ from extractors.zip_extractor import ZipExtractor
 from identifiers.pdf_identifier import PdfIdentifier
 from identifiers.zip_identifier import ZipIdentifier
 
-def identify_content(file_content):
-    ans = None  
-    if PdfIdentifier(file_content):
-        ans = "pdf"
-    elif ZipIdentifier(file_content):
-        ans = "zip"
-    else:
-        logging.error("file Type not supported")
-        exit(-1)
-    return ans
-    
 
 def main():
     args = utils.argparse()
@@ -24,12 +13,13 @@ def main():
     file_content = utils.read_file(args.filename)
     utils.verify_output(args.output)
     
-    file_type = identify_content(file_content)
-
-    if file_type == 'pdf':
+    if PdfIdentifier(file_content):
         extractor = PdfExtractor(file_content, args.output)
-    elif file_type == 'zip':
+    elif ZipIdentifier(file_content):
         extractor = ZipExtractor(file_content, args.output)
+    else:
+        logging.error("file Type not supported")
+        exit(-1)
     extractor.extract_content()
 
 
