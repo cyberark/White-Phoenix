@@ -1,11 +1,15 @@
-This tool is meant to be a decryptor for files encrypted by BlackCat Ransomware
+
+
+This tool recovers content from files encrypted by Ransomware using “intermittent encryption”
+
+Successfully tested on:
+    BlackCat/ALPHV Ransomware, Play Ransomware, Qilin/Agenda Ransomware, BianLian Ransomware, DarkBit
 
 Usage:
-    python3 main.py [-h] -f/--file FILE -o/--output FOLDER -t/--type FILETYPE
+    python3 White-Phoenix.py [-h] -f/--file FILE -o/--output FOLDER 
 
     -f/--file : path to the encrypted file
     -o/--output : path to folder to save the content extracted from the file
-    -t/--type : type of encrypted file
 
 Currently supported filetypes include:
     'pdf', 
@@ -13,8 +17,5 @@ Currently supported filetypes include:
     'xlsx', 'xlsm', 'xltx', 'xltm', 'xlsb', 'xlam', 'ods'
     'pptx', 'pptm', 'ptox', 'potm', 'ppsx', 'ppsm', 'odp'
     'zip'
-
-Successfully tested on:
-    BlackCat/ALPHV Ransomware, Play Ransomware, Qilin/Agenda Ransomware, BianLian Ransomware
 
 Please note: This tool is not 100% effective and has a greater chance of success for larger files
