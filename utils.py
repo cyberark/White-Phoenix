@@ -17,23 +17,6 @@ def argparse():
     return parser.parse_args()
 
 
-def supported_file_type(file_type):
-    """
-    check if filetype is supported
-    :param file_type: the given file type
-    :return: true if file type is supported, false otherwise
-    """
-    supported_types = ['pdf', 
-    'docx', 'docm', 'dotx', 'dotm', 'odt',
-    'xlsx', 'xlsm', 'xltx', 'xltm', 'xlsb', 'xlam', 'ods'
-    'pptx', 'pptm', 'ptox', 'potm', 'ppsx', 'ppsm', 'odp'
-    'zip']
-    if file_type not in supported_types:
-        logging.error("file Type not supported")
-        exit(-1)
-    return
-
-
 def verify_output(output_path):
     """
     verify the output folder exists, if not try to create the path

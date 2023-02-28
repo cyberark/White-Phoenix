@@ -1,5 +1,3 @@
-
-
 This tool recovers content from files encrypted by Ransomware using “intermittent encryption”
 
 Successfully tested on:

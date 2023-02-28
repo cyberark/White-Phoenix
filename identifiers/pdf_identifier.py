@@ -2,10 +2,9 @@ import re
 
 def PdfIdentifier(content):
     """
-    Loop through pdf objects to find objects with interesting content
-    :return:
+    Sherach for PDF object  
+    Return: None, if the item is not found 
     """
-    objects_regex = re.compile(b"\D(\d+ 0 obj.*?endobj)", re.S)
-    return_object = re.search(objects_regex, content)
-    return return_object
+    objects_regex = b"\d+ 0 obj."
+    return re.search(objects_regex, content)
 

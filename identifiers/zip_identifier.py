@@ -2,9 +2,8 @@ import re
 
 def ZipIdentifier(content):
     """
-    Loop through pdf objects to find objects with interesting content
-    :return:
+    Search for Zip Magic
+    Return: None, if the item is not found 
     """
-    objects_regex = re.compile(b"PK\x03\x04", re.S)
-    return_object = re.search(objects_regex, content)
-    return return_object
+    objects_regex = b"PK\x03\x04"
+    return re.search(objects_regex, content)
