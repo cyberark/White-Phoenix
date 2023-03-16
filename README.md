@@ -1,6 +1,6 @@
 This tool recovers content from files encrypted by Ransomware using “intermittent encryption”
 
-Successfully tested on:
+Tested on:
     BlackCat/ALPHV Ransomware, Play Ransomware, Qilin/Agenda Ransomware, BianLian Ransomware, DarkBit
 
 Usage:
@@ -16,4 +16,6 @@ Currently supported filetypes include:
     'pptx', 'pptm', 'ptox', 'potm', 'ppsx', 'ppsm', 'odp'
     'zip'
 
-Please note: This tool is not 100% effective and has a greater chance of success for larger files
+Please note: This tool is provided as is, and subject to the Apache License Version 2.0. It is not 100% effective and has a greater chance of success when running on larger files.
+
+Copyright (c) 2023 CyberArk Software Ltd. All rights reserved.
