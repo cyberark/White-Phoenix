@@ -2,87 +2,19 @@ import zlib
 import logging
 import os
 from argparse import ArgumentParser
-import winreg
-import tkinter as tk
+import eula
 
-
-def create_eula():
-    """
-    Create a EULA window and updage a registry key when accepted
-    """
-    EULA_ACCEPTED_REG_KEY = r"SOFTWARE\White Phoenix"
-    EULA_ACCEPTED_REG_VALUE = "EULAAccepted"
-    EULA_Title = "End User License Agreement (EULA)"
-    EULA_TEXT = """\
-
-
-This is the End User License Agreement (EULA) for the software product developed by XYZ Corp. Please read this agreement carefully before using the software. 
-
-By using the software, you agree to be bound by the terms of this EULA. If you do not agree to the terms of this EULA, do not use the software.
-
-1. License
-XYZ Corp. grants you a limited, non-exclusive license to use the software for personal or commercial purposes.
-
-2. Ownership
-The software and all intellectual property rights, including but not limited to copyrights and trademarks, are owned by XYZ Corp.
-
-3. Restrictions
-You may not copy, modify, distribute, sell, or transfer the software or any portion thereof without the prior written consent of XYZ Corp.
-
-4. Disclaimer of Warranties
-The software is provided "as is" without warranty of any kind, either express or implied, including, but not limited to, the implied warranties of merchantability and fitness for a particular purpose.
-
-5. Limitation of Liability
-In no event shall XYZ Corp. be liable for any direct, indirect, incidental, special, or consequential damages arising out of or in connection with the use or inability to use the software.
-
-6. Termination
-This EULA is effective until terminated. You may terminate this EULA at any time by uninstalling the software.
-
-7. Governing Law
-This EULA shall be governed by and construed in accordance with the laws of the state of California.
-
-    """
-    
-    
-    # Create the main window
-    eula_window = tk.Tk()
-    eula_window.title("End User License Agreement")
-    eula_window.geometry("600x600")
-
-    # Create a text widget to display the EULA text
-    eula_text = tk.Text(eula_window, wrap="word")
-    eula_text.insert(tk.END, EULA_Title, "bold")
-    eula_text.insert(tk.END, EULA_TEXT)
-    eula_text.tag_configure("bold", font=("bold", 14))
-    eula_text.pack(fill="both", padx=10, pady= 10, expand=True)
-
-    # Create a button to accept the EULA and close the popup window
-    def accept_eula():
-        key = winreg.CreateKey(winreg.HKEY_CURRENT_USER, EULA_ACCEPTED_REG_KEY)
-        winreg.SetValueEx(key, EULA_ACCEPTED_REG_VALUE, 0, winreg.REG_DWORD, 1)
-        winreg.CloseKey(key)
-        eula_window.destroy()
-    
-    #Create Decline Button
-    accept_button = tk.Button(eula_window, text="Decline", command=exit)
-    accept_button.pack(side=tk.RIGHT, padx=5, pady= 5)
-    #Create Accept Button
-    accept_button = tk.Button(eula_window, text="Accept", command=accept_eula)
-    accept_button.pack(side=tk.RIGHT, pady= 5)
-
-    
-    eula_window.mainloop()
 
 def EULA():
     """
     Check if EULA was agreed upon
-    If not call creat_eula
+    If not call create_eula
+    If not accepted after call the exit
     """
-    EULA_ACCEPTED_REG_KEY = r"SOFTWARE\White Phoenix"
-    key = winreg.CreateKey(winreg.HKEY_CURRENT_USER, EULA_ACCEPTED_REG_KEY)
-    value = winreg.QueryInfoKey(key)
-    if value[1] != 1:
-        create_eula()
+    if not eula.check_key():
+        eula.create_eula()
+    if not eula.check_key():
+        exit()
 
 
 def argparse():
