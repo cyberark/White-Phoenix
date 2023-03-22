@@ -14,7 +14,7 @@ def EULA():
     if not eula.check_key():
         eula.create_eula()
     if not eula.check_key():
-        exit()
+        exit(-1)
 
 
 def argparse():
@@ -50,6 +50,7 @@ def init_logger():
     :return:
     """
     logging.basicConfig(level=logging.INFO, format='%(asctime)s %(levelname)s: %(message)s')
+    logging.info("Copyright © 2023 CyberArk Software Ltd. All rights reserved.")
 
 
 def find_object_number(obj_start, content):
