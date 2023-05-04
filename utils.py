@@ -2,6 +2,19 @@ import zlib
 import logging
 import os
 from argparse import ArgumentParser
+import eula
+
+
+def EULA():
+    """
+    Check if EULA was agreed upon
+    If not call create_eula
+    If not accepted after call the exit
+    """
+    if not eula.check_key():
+        eula.create_eula()
+    if not eula.check_key():
+        exit(-1)
 
 
 def argparse():
@@ -37,6 +50,7 @@ def init_logger():
     :return:
     """
     logging.basicConfig(level=logging.INFO, format='%(asctime)s %(levelname)s: %(message)s')
+    logging.info("Copyright © 2023 CyberArk Software Ltd. All rights reserved.")
 
 
 def find_object_number(obj_start, content):
