@@ -2,20 +2,6 @@ import zlib
 import logging
 import os
 from argparse import ArgumentParser
-import eula
-
-
-def EULA():
-    """
-    Check if EULA was agreed upon
-    If not call create_eula
-    If not accepted after call the exit
-    """
-    if not eula.check_key():
-        eula.create_eula()
-    if not eula.check_key():
-        exit(-1)
-
 
 def argparse():
     """
