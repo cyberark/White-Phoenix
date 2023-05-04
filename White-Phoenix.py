@@ -9,8 +9,6 @@ from identifiers.zip_identifier import ZipIdentifier
 def main():
     args = utils.argparse()
     utils.init_logger()
-    
-    utils.EULA()
 
     file_content = utils.read_file(args.filename)
     utils.verify_output(args.output)
