@@ -53,6 +53,8 @@ class PdfExtractor(Extractor):
 
         text_content = pdf_object.split(b"stream")[1][:-3].strip()
         text_content = utils.flate_decode(text_content, obj_num)
+        if obj_num == 2:
+            pass
         if text_content is not None:
             if b"BT" in text_content and b"ET" in text_content:
                 if b"(" in text_content:
@@ -91,21 +93,29 @@ class PdfExtractor(Extractor):
         """
         mapped_content = pdf_parsers.parse_mapped_content(self.mapped_objects[obj_num])
 
-        # try hex mapping
-        hex_mapped_content = binascii.unhexlify(mapped_content).replace(b"\x00", b"")
-        utils.write_file(obj_num, hex_mapped_content, self.output, "text", cmap="hex")
-
         # try mappings from cmap objects
         for cmap in self.cmap_objects:
-            unmapped_content = b""
-            mapped_array = self.get_mapped_keys(mapped_content, self.cmap_objects[cmap])
-
-            for key_value in mapped_array:
-                if key_value in self.cmap_objects[cmap]:
-                    unmapped_content += self.cmap_objects[cmap][key_value]
-            extracted_text = binascii.unhexlify(unmapped_content).replace(b"\x00", b"")
+            try:
+                extracted_text = self.get_extracted_text(mapped_content, cmap)
+            except Exception as e:
+                print(e)
+                continue
             if len(extracted_text) > 0:
                 utils.write_file(obj_num, extracted_text, self.output, "text", cmap=cmap)
+            else:
+                # try hex mapping
+                hex_mapped_content = binascii.unhexlify(mapped_content).replace(b"\x00", b"")
+                if hex_mapped_content.isascii():
+                    utils.write_file(obj_num, hex_mapped_content, self.output, "text", cmap="hex")
+
+    def get_extracted_text(self, mapped_content, cmap):
+        unmapped_content = b""
+        mapped_array = self.get_mapped_keys(mapped_content, self.cmap_objects[cmap])
+        for key_value in mapped_array:
+            unmapped_content += self.cmap_objects[cmap][key_value]
+        extracted_text = binascii.unhexlify(unmapped_content)
+        decoded_extracted_text = extracted_text.decode('utf-16-be')
+        return decoded_extracted_text.encode('utf-8')
 
     def get_mapped_keys(self, mapped_content, cmap):
         """
@@ -116,7 +126,5 @@ class PdfExtractor(Extractor):
         :return: the mapped data broken down into chunks of size cmap key length
         """
         key_len = cmap["key length"]
-        if key_len not in self.mapping_keys:
-            self.mapping_keys[key_len] = \
-                [mapped_content[i: i + key_len] for i in range(0, len(mapped_content), key_len)]
+        self.mapping_keys[key_len] = [mapped_content[i: i + key_len] for i in range(0, len(mapped_content), key_len)]
         return self.mapping_keys[key_len]
