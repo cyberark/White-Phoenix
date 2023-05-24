@@ -13,6 +13,8 @@ def argparse():
                         help="Path to encrypted file")
     parser.add_argument("-o", "--output", required=True, dest="output", metavar="FOLDER",
                         help="Path to folder to save extracted content")
+    parser.add_argument("-dl", "--disable-log", required=False, dest="disable_log", action='store_false',
+                        help="Disable the log")
     return parser.parse_args()
 
 

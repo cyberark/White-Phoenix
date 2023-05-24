@@ -9,10 +9,10 @@ from identifiers.zip_identifier import ZipIdentifier
 def main():
     args = utils.argparse()
     utils.init_logger()
-
+    if args.disable_log is False:
+        logging.disable()
     file_content = utils.read_file(args.filename)
     utils.verify_output(args.output)
-    
     if PdfIdentifier(file_content):
         extractor = PdfExtractor(file_content, args.output)
     elif ZipIdentifier(file_content):
