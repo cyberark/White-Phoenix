@@ -1,3 +1,4 @@
+import logging
 import re
 import binascii
 import utils
@@ -11,6 +12,7 @@ class PdfExtractor(Extractor):
         self.mapped_objects = dict()
         self.cmap_objects = dict()
         self.mapping_keys = dict()
+        self.merged_cmap = dict()
 
     def extract_content(self):
         """
@@ -62,7 +64,7 @@ class PdfExtractor(Extractor):
                 elif b"<" in text_content:
                     self.mapped_objects[obj_num] = text_content
             elif b"beginbfchar" in text_content:
-                self.cmap_objects[obj_num] = pdf_parsers.parse_cmap(text_content)
+                self.cmap_objects[obj_num] = pdf_parsers.parse_cmap(text_content, self.merged_cmap)
 
     def extract_text_unmapped(self, obj_num, text_content):
         """
@@ -75,9 +77,9 @@ class PdfExtractor(Extractor):
         s = text_content[text_content.find(b"BT"): text_content.rfind(b"ET")]
         to_extract = False
         for i in range(len(s)):
-            if s[i] == ord(b"(") and s[i-1] != ord(b"\\"):
+            if s[i] == ord(b"(") and s[i - 1] != ord(b"\\"):
                 to_extract = True
-            elif s[i] == ord(b")") and s[i-1] != ord(b"\\"):
+            elif s[i] == ord(b")") and s[i - 1] != ord(b"\\"):
                 to_extract = False
             elif to_extract:
                 extracted_text += s[i].to_bytes(1, 'big')
@@ -92,39 +94,51 @@ class PdfExtractor(Extractor):
         :return:
         """
         mapped_content = pdf_parsers.parse_mapped_content(self.mapped_objects[obj_num])
-
-        # try mappings from cmap objects
-        for cmap in self.cmap_objects:
+        should_try_hex = True
+        for key_value in self.merged_cmap:
             try:
-                extracted_text = self.get_extracted_text(mapped_content, cmap)
+                extracted_text = self.get_extracted_text(mapped_content, key_value, obj_num)
+                if len(extracted_text) > 0:
+                    utils.write_file(obj_num, extracted_text, self.output, "text", cmap_len=key_value)
+                    should_try_hex = False
             except Exception as e:
-                print(e)
-                continue
-            if len(extracted_text) > 0:
-                utils.write_file(obj_num, extracted_text, self.output, "text", cmap=cmap)
-            else:
-                # try hex mapping
+                logging.error(f'error: {e}, object number:{obj_num}, key length:{key_value}')
+        if should_try_hex:
+            # try hex mapping
+            try:
                 hex_mapped_content = binascii.unhexlify(mapped_content).replace(b"\x00", b"")
-                if hex_mapped_content.isascii():
-                    utils.write_file(obj_num, hex_mapped_content, self.output, "text", cmap="hex")
+                utils.write_file(obj_num, hex_mapped_content, self.output, "text", cmap_len="hex")
+            except Exception as e:
+                logging.error(f'error while trying to do hex mapping: {e}, object number:{obj_num}')
 
-    def get_extracted_text(self, mapped_content, cmap):
+    def get_extracted_text(self, mapped_content, key_len, obj_num):
+        """
+        extract the text.
+        :param mapped_content: the mapped content
+        :param key_len: the length of the key
+        :param obj_num: the number of the object
+        :return: the text of the object
+        """
         unmapped_content = b""
-        mapped_array = self.get_mapped_keys(mapped_content, self.cmap_objects[cmap])
+        mapped_array = self.get_mapped_keys(mapped_content, key_len, obj_num)
         for key_value in mapped_array:
-            unmapped_content += self.cmap_objects[cmap][key_value]
+            if key_value in self.merged_cmap[key_len]:
+                unmapped_content += self.merged_cmap[key_len][key_value]
+            else:
+                logging.debug(f"Could not find key:{key_value} in cmaps with the length of {key_len}")
         extracted_text = binascii.unhexlify(unmapped_content)
         decoded_extracted_text = extracted_text.decode('utf-16-be')
         return decoded_extracted_text.encode('utf-8')
 
-    def get_mapped_keys(self, mapped_content, cmap):
+    def get_mapped_keys(self, mapped_content, key_len, obj_num):
         """
         break mapped data into chucks of size key length so the mapped data can be unmapped
         save the breakdown into mapping keys to avoid having to repeat the same breakdown over and over
         :param mapped_content: the mapped content to break into chunks
-        :param cmap: the cmap dict containing the key length
+        :param key_len: the len of the cmap keys
+        :param obj_num: the number of the object (unique)
         :return: the mapped data broken down into chunks of size cmap key length
         """
-        key_len = cmap["key length"]
-        self.mapping_keys[key_len] = [mapped_content[i: i + key_len] for i in range(0, len(mapped_content), key_len)]
-        return self.mapping_keys[key_len]
+        if obj_num not in self.mapping_keys:
+            self.mapping_keys[obj_num] = [mapped_content[i: i + key_len] for i in range(0, len(mapped_content), key_len)]
+        return self.mapping_keys[obj_num]

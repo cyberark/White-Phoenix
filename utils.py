@@ -86,21 +86,21 @@ def read_file(filename):
     return content
 
 
-def write_file(obj_num, file_content, output_path, file_type, cmap=None):
+def write_file(obj_num, file_content, output_path, file_type, cmap_len=None):
     """
     write extracted content to file
     :param obj_num: the object from which the content was extracted
     :param file_content: the content of the file to write
     :param output_path: the path to the output folder where the extracted content is to be written
     :param file_type: the type of file image or text
-    :param cmap: if text was decoded with cmap, this is the object number of the cmap
+    :param cmap_len: if text was decoded with cmap, this is the length of the bytes in the cmaps
     :return:
     """
-    file_name = get_file_name(obj_num, file_type, cmap)
+    file_name = get_file_name(obj_num, file_type, cmap_len)
     with open(f"{output_path}/{file_name}", "wb") as f:
         f.write(file_content)
-    log = f"Extracted {file_type} content from object {obj_num}" if (cmap is None) else \
-        f"Extracted {file_type} content from object {obj_num} with cmap from {cmap}"
+    log = f"Extracted {file_type} content from object {obj_num}" if (cmap_len is None) else \
+        f"Extracted {file_type} content from object {obj_num} with cmap from {cmap_len}"
     logging.info(log)
 
 
@@ -117,7 +117,9 @@ def get_file_name(obj_num, file_type, cmap):
         "text": ".txt"
     }
     file_name = str(obj_num)
-    if cmap is not None:
-        file_name += '_cmap_' + str(cmap)
+    if cmap is not None and cmap != "hex":
+        file_name += '_cmap_len_' + str(cmap)
+    elif cmap is not None and cmap == "hex":
+        file_name += 'hex' + str(cmap)
     file_name += file_types[file_type]
     return file_name
