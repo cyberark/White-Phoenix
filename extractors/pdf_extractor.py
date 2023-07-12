@@ -1,9 +1,12 @@
 import logging
+import os
 import re
 import binascii
+import PyPDF2
 import utils
 import pdf_parsers
 from extractors.extractor import Extractor
+from PyPDF2.filters import *
 
 
 class PdfExtractor(Extractor):
@@ -13,6 +16,9 @@ class PdfExtractor(Extractor):
         self.cmap_objects = dict()
         self.mapping_keys = dict()
         self.merged_cmap = dict()
+        self.helper_pdf = 'helper.pdf'
+        self.temp_pdf = 'temp.pdf'
+        self.binary_to_replace = b'AABBAA'
 
     def extract_content(self):
         """
@@ -38,12 +44,89 @@ class PdfExtractor(Extractor):
         :param obj_num: the number of the object with image in it
         :return:
         """
-        image_content = pdf_object.split(b"stream")[1][:-3].strip()
-        if b"FlateDecode" in pdf_object:
-            image_content = utils.flate_decode(image_content, obj_num)
-        # check content exists and isn't "junk" starting with null bytes
-        if image_content is not None and image_content[:4] != b"\x00" * 4:
-            utils.write_file(obj_num, image_content, self.output, "image")
+        try:
+            self.save_image_in_temp_pdf(pdf_object)
+            self.extract_image(obj_num)
+        except Exception as e:
+            logging.error(f'{e} in obj number {obj_num}')
+
+    def extract_image(self, obj_num):
+        """
+        extract the image
+        :param obj_num: the number of the object
+        """
+        pdf = open('temp.pdf', 'rb')
+        pdf_reader = PyPDF2.PdfReader(pdf)
+        for page_num in range(0, len(pdf_reader.pages)):
+            page_obj = pdf_reader.pages[page_num]
+            try:
+                xobject = page_obj['/Resources']['/XObject'].get_object()
+            except:
+                continue
+            for obj in xobject:
+                if xobject[obj]['/Subtype'] == '/Image':
+                    mode = self.get_image_mode(xobject[obj]['/ColorSpace'])
+                    image_stream = xobject[obj]
+                    filter_array = image_stream.get("/Filter", ())
+                    image_data = self.decode_image(image_stream._data, filter_array)
+                    if '/DCTDecode' in filter_array:
+                        utils.save_jpeg_image(image_data, mode, obj_num, self.output)
+                    elif '/JPXDecode' in filter_array:
+                        utils.save_jpeg2000_image(image_data, obj_num, self.output)
+                    else:
+                        utils.write_file(obj_num, image_data, self.output, "image")
+        pdf.close()
+        os.remove(self.temp_pdf)
+
+
+    def save_image_in_temp_pdf(self, image_content):
+        """
+        saving the image in a temporary
+        :param image_content: the image content
+        """
+        image_content = image_content[image_content.find(b'<<'):]
+        pdf_helper = open(self.helper_pdf, 'rb')
+        pdf_helper_content = pdf_helper.read()
+        pdf_helper.close()
+        temp_pdf_data = pdf_helper_content.replace(self.binary_to_replace, image_content)
+        temp_pdf_file = open(self.temp_pdf, 'wb')
+        temp_pdf_file.write(temp_pdf_data)
+        temp_pdf_file.close()
+
+    def decode_image(self, image_content, image_filter_array):
+        """
+        decoded the image by filter
+        :param image_content: the byte array of the image
+        :param image_filter_array: array of filters of the image
+        :return: an image object
+        """
+        decoded_image = b""
+        if '/FlateDecode' in image_filter_array:
+            decoded_image = FlateDecode.decode(image_content)
+        elif "/ASCIIHexDecode" in image_filter_array:
+            decoded_image = ASCIIHexDecode.decode(image_content)
+        elif "/LZWDecode" in image_filter_array:
+            decoded_image = LZWDecode.decode(image_content)
+        elif "/ASCII85Decode" in image_filter_array:
+            decoded_image = ASCII85Decode.decode(image_content)
+        return decoded_image if decoded_image != b'' else image_content
+
+    def get_image_mode(self, color_space):
+        """
+        return the image mode
+        :param color_space: the color space of the image
+        :return: the mode of the image
+        """
+        mode = ""
+        if color_space == '/DeviceRGB':
+            mode = "RGB"
+        elif color_space == '/DeviceCMYK':
+            mode = "CMYK"
+        elif color_space == '/DeviceGray':
+            mode = "L"
+        elif color_space == "/Indexed" or color_space == "/ICCBased":
+            mode = "P"
+        return mode
 
     def inspect_flate_object(self, pdf_object, obj_num):
         """
@@ -52,7 +135,6 @@ class PdfExtractor(Extractor):
         :param obj_num: the number of the object to be inspected
         :return:
         """
-
         text_content = pdf_object.split(b"stream")[1][:-3].strip()
         text_content = utils.flate_decode(text_content, obj_num)
         if obj_num == 2:
@@ -140,5 +222,6 @@ class PdfExtractor(Extractor):
         :return: the mapped data broken down into chunks of size cmap key length
         """
         if obj_num not in self.mapping_keys:
-            self.mapping_keys[obj_num] = [mapped_content[i: i + key_len] for i in range(0, len(mapped_content), key_len)]
+            self.mapping_keys[obj_num] = [mapped_content[i: i + key_len] for i in
+                                          range(0, len(mapped_content), key_len)]
         return self.mapping_keys[obj_num]
