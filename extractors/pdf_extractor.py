@@ -7,20 +7,19 @@ import utils
 import pdf_parsers
 from extractors.extractor import Extractor
 from PyPDF2.filters import *
-from docx import Document
 
 
 class PdfExtractor(Extractor):
-    def __init__(self, file_content, output):
+    def __init__(self, file_content, output, separated_files):
         super().__init__(file_content, output)
         self.mapped_objects = dict()
         self.cmap_objects = dict()
         self.mapping_keys = dict()
         self.merged_cmap = dict()
+        self.separated_files = separated_files
         self.helper_pdf = 'helper.pdf'
         self.temp_pdf = 'temp.pdf'
         self.binary_to_replace = b'AABBAA'
-        # self.document = Document()
 
     def extract_content(self):
         """
@@ -38,7 +37,7 @@ class PdfExtractor(Extractor):
         if len(self.mapped_objects) > 0:
             for obj_num in self.mapped_objects:
                 self.extract_text_mapped(obj_num)
-        self.document.save('out.docx')
+        utils.save_doc_file(os.path.join(self.output, 'out.docx'))
 
     def extract_stream_image(self, pdf_object, obj_num):
         """
@@ -47,20 +46,21 @@ class PdfExtractor(Extractor):
         :param obj_num: the number of the object with image in it
         :return:
         """
-        try:
-            self.save_image_in_temp_pdf(pdf_object)
-            self.extract_image(obj_num)
-            utils.write_to_file(obj_num, None, None, 'image', self.document)
-        except Exception as e:
-            logging.error(f'{e} in obj number {obj_num}')
+        self.save_image_in_temp_pdf(pdf_object)
+        self.extract_image(obj_num)
+        utils.write_to_file(obj_num, None, self.output, 'image', self.separated_files)
 
     def extract_image(self, obj_num):
         """
         extract the image
         :param obj_num: the number of the object
         """
+        output = self.output if self.separated_files is True else './temp'
         pdf = open('temp.pdf', 'rb')
-        pdf_reader = PyPDF2.PdfReader(pdf)
+        try:
+            pdf_reader = PyPDF2.PdfReader(pdf)
+        except:
+            return
         for page_num in range(0, len(pdf_reader.pages)):
             page_obj = pdf_reader.pages[page_num]
             try:
@@ -74,11 +74,11 @@ class PdfExtractor(Extractor):
                     filter_array = image_stream.get("/Filter", ())
                     image_data = self.decode_image(image_stream._data, filter_array)
                     if '/DCTDecode' in filter_array:
-                        utils.save_jpeg_image(image_data, mode, obj_num, './temp')
+                        utils.save_jpeg_image(image_data, mode, obj_num, output)
                     elif '/JPXDecode' in filter_array:
-                        utils.write_raw_file(image_data, obj_num, './temp', 'jp2')
+                        utils.write_raw_file(image_data, obj_num, output, '.jp2')
                     else:
-                        utils.write_raw_file(obj_num, image_data, './temp')
+                        utils.write_raw_file(image_data, obj_num, output)
         pdf.close()
         os.remove(self.temp_pdf)
 
@@ -168,7 +168,7 @@ class PdfExtractor(Extractor):
                 extracted_text += s[i].to_bytes(1, 'big')
 
         if len(extracted_text.strip()) > 0:
-            utils.write_to_file(obj_num, extracted_text, self.output, "text", self.document)
+            utils.write_to_file(obj_num, extracted_text, self.output, "text", self.separated_files)
 
     def extract_text_mapped(self, obj_num):
         """
@@ -182,7 +182,7 @@ class PdfExtractor(Extractor):
             try:
                 extracted_text = self.get_extracted_text(mapped_content, key_value, obj_num)
                 if len(extracted_text) > 0:
-                    utils.write_to_file(obj_num, extracted_text, self.output, "text", self.document, cmap_len=key_value)
+                    utils.write_to_file(obj_num, extracted_text, self.output, "text", self.separated_files, cmap_len=key_value)
                     should_try_hex = False
             except Exception as e:
                 logging.error(f'error: {e}, object number:{obj_num}, key length:{key_value}')
@@ -190,7 +190,7 @@ class PdfExtractor(Extractor):
             # try hex mapping
             try:
                 hex_mapped_content = binascii.unhexlify(mapped_content).replace(b"\x00", b"")
-                utils.write_to_file(obj_num, hex_mapped_content, self.output, self.document, "text", cmap_len="hex")
+                utils.write_to_file(obj_num, hex_mapped_content, self.output, "text", self.separated_files, cmap_len="hex")
             except Exception as e:
                 logging.error(f'error while trying to do hex mapping: {e}, object number:{obj_num}')
 

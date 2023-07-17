@@ -5,6 +5,7 @@ from argparse import ArgumentParser
 from io import BytesIO
 from PIL import Image
 import numpy as np
+from docx import Document
 
 logo = """
 ⠀⠠⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠠⠀⠀⠀⠀⠀
@@ -27,6 +28,8 @@ logo = """
 ⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠈⠂⠑⠀⠀⠁⠈⠂⠈⠀⠀⠀⠀⠀⠀⠀
 """
 
+document = Document()
+
 
 def argparse():
     """
@@ -38,8 +41,8 @@ def argparse():
                         help="Path to encrypted file")
     parser.add_argument("-o", "--output", required=True, dest="output", metavar="FOLDER",
                         help="Path to folder to save extracted content")
-    parser.add_argument("-d", "--docx", required=False, dest="docx", action='store_true',
-                        help="Extract to word document")
+    parser.add_argument("-s", "--separated-files", required=False, dest="separated_files", action='store_true',
+                        help="Extract to separate files")
     parser.add_argument("-dl", "--disable-log", required=False, dest="disable_log", action='store_true',
                         help="Disable the log")
     return parser.parse_args()
@@ -66,7 +69,6 @@ def init_logger(disable_logger):
     """
     if disable_logger is True:
         logging.disable()
-
     else:
         logging.basicConfig(level=logging.INFO, format='%(asctime)s %(levelname)s: %(message)s')
         logging.info(logo)
@@ -133,30 +135,34 @@ def write_raw_file(image_data, obj_num, output, extension=None):
     image.close()
 
 
-def write_to_file(obj_num, file_content, output_path, file_type, document, cmap_len=None, file_extension=None):
+def write_to_file(obj_num, file_content, output_path, file_type, separated_files, cmap_len=None):
     """
     write extracted content to file
     :param obj_num: the object from which the content was extracted
     :param file_content: the content of the file to write
     :param output_path: the path to the output folder where the extracted content is to be written
     :param file_type: the type of file image or text
+    :param separated_files: boolean for saving in separated files or in docx file
     :param cmap_len: if text was decoded with cmap, this is the length of the bytes in the cmaps
-    :param file_extension: the extension of the file
     :return:
     """
     if file_type == "text":
-        document.add_paragraph(file_content.decode())
+        if separated_files:
+            with open(output_path + f'\\' + str(obj_num) + '.txt', 'w+') as txt_file:
+                txt_file.write(file_content.decode())
+        else:
+            document.add_paragraph(file_content.decode())
     else:
         for file_name in os.listdir('./temp'):
             file_path = os.path.join('./temp', file_name)
-            try:
-                document.add_picture(file_path)
-            except Exception as e:
-                logging.error(f'{e} in object number {str(obj_num)}')
-            os.remove(file_path)
-    # file_name = get_file_name(obj_num, file_type, cmap_len, file_extension)
-    # with open(f"{output_path}/{file_name}", "wb") as f:
-    #     f.write(file_content)
+            if separated_files is not True:
+                try:
+                    document.add_picture(file_path)
+                except Exception as e:
+                    logging.error(f'{e} in object number {str(obj_num)}')
+                os.remove(file_path)
+            else:
+                os.replace(file_path, os.path.join(output_path, file_name))
     log = f"Extracted {file_type} content from object {obj_num}" if (cmap_len is None) else \
         f"Extracted {file_type} content from object {obj_num} with cmap from {cmap_len}"
     logging.info(log)
@@ -204,3 +210,7 @@ def save_jpeg_image(image_content, mode, obj_num, output):
         inv_data -= im_data
         image = Image.frombytes(image.mode, image.size, inv_data.tobytes())
     image.save(output + "//" + str(obj_num) + ".jpg")
+
+
+def save_doc_file(output):
+    document.save(output)
