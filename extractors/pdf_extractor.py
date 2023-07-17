@@ -7,6 +7,7 @@ import utils
 import pdf_parsers
 from extractors.extractor import Extractor
 from PyPDF2.filters import *
+from docx import Document
 
 
 class PdfExtractor(Extractor):
@@ -19,6 +20,7 @@ class PdfExtractor(Extractor):
         self.helper_pdf = 'helper.pdf'
         self.temp_pdf = 'temp.pdf'
         self.binary_to_replace = b'AABBAA'
+        # self.document = Document()
 
     def extract_content(self):
         """
@@ -36,6 +38,7 @@ class PdfExtractor(Extractor):
         if len(self.mapped_objects) > 0:
             for obj_num in self.mapped_objects:
                 self.extract_text_mapped(obj_num)
+        self.document.save('out.docx')
 
     def extract_stream_image(self, pdf_object, obj_num):
         """
@@ -47,6 +50,7 @@ class PdfExtractor(Extractor):
         try:
             self.save_image_in_temp_pdf(pdf_object)
             self.extract_image(obj_num)
+            utils.write_to_file(obj_num, None, None, 'image', self.document)
         except Exception as e:
             logging.error(f'{e} in obj number {obj_num}')
 
@@ -70,14 +74,13 @@ class PdfExtractor(Extractor):
                     filter_array = image_stream.get("/Filter", ())
                     image_data = self.decode_image(image_stream._data, filter_array)
                     if '/DCTDecode' in filter_array:
-                        utils.save_jpeg_image(image_data, mode, obj_num, self.output)
+                        utils.save_jpeg_image(image_data, mode, obj_num, './temp')
                     elif '/JPXDecode' in filter_array:
-                        utils.save_jpeg2000_image(image_data, obj_num, self.output)
+                        utils.write_raw_file(image_data, obj_num, './temp', 'jp2')
                     else:
-                        utils.write_file(obj_num, image_data, self.output, "image")
+                        utils.write_raw_file(obj_num, image_data, './temp')
         pdf.close()
         os.remove(self.temp_pdf)
-
 
     def save_image_in_temp_pdf(self, image_content):
         """
@@ -137,8 +140,6 @@ class PdfExtractor(Extractor):
         """
         text_content = pdf_object.split(b"stream")[1][:-3].strip()
         text_content = utils.flate_decode(text_content, obj_num)
-        if obj_num == 2:
-            pass
         if text_content is not None:
             if b"BT" in text_content and b"ET" in text_content:
                 if b"(" in text_content:
@@ -167,7 +168,7 @@ class PdfExtractor(Extractor):
                 extracted_text += s[i].to_bytes(1, 'big')
 
         if len(extracted_text.strip()) > 0:
-            utils.write_file(obj_num, extracted_text, self.output, "text")
+            utils.write_to_file(obj_num, extracted_text, self.output, "text", self.document)
 
     def extract_text_mapped(self, obj_num):
         """
@@ -181,7 +182,7 @@ class PdfExtractor(Extractor):
             try:
                 extracted_text = self.get_extracted_text(mapped_content, key_value, obj_num)
                 if len(extracted_text) > 0:
-                    utils.write_file(obj_num, extracted_text, self.output, "text", cmap_len=key_value)
+                    utils.write_to_file(obj_num, extracted_text, self.output, "text", self.document, cmap_len=key_value)
                     should_try_hex = False
             except Exception as e:
                 logging.error(f'error: {e}, object number:{obj_num}, key length:{key_value}')
@@ -189,7 +190,7 @@ class PdfExtractor(Extractor):
             # try hex mapping
             try:
                 hex_mapped_content = binascii.unhexlify(mapped_content).replace(b"\x00", b"")
-                utils.write_file(obj_num, hex_mapped_content, self.output, "text", cmap_len="hex")
+                utils.write_to_file(obj_num, hex_mapped_content, self.output, self.document, "text", cmap_len="hex")
             except Exception as e:
                 logging.error(f'error while trying to do hex mapping: {e}, object number:{obj_num}')
 

@@ -6,6 +6,28 @@ from io import BytesIO
 from PIL import Image
 import numpy as np
 
+logo = """
+⠀⠠⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠠⠀⠀⠀⠀⠀
+⠀⢸⢠⠀⣄⢣⡀⠀⢦⡀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠨⡀⠀⠠⡑⡀⢀⠀⠀⠀
+⠀⢸⠜⣦⣻⢮⢧⢀⢸⢪⡂⡀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⢐⢐⠀⢕⠐⠠⡢⠀⠀⠀
+⠀⢘⢏⡺⣪⢫⣟⢐⢸⢕⡇⡇⡀⡀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⡂⡂⡊⡂⡌⡪⠂⡀⠀⠀
+⠀⠈⠳⣺⢝⣗⣗⡇⡮⡳⣝⡅⡧⡣⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⡐⡐⡐⡜⡌⡎⢎⠔⣠⠀⠀
+⠀⠀⠀⠈⠓⢗⢵⢝⢜⢽⢸⡪⣺⠸⡡⣀⠀⠀⠀⠀⠀⠀⠅⡐⡐⡐⢌⠎⡊⡌⣆⢏⠊⠀⠀
+⠀⠀⠀⠀⠀⠀⠙⢜⢜⢜⢔⢕⢕⢜⠜⡢⡂⠂⠀⡀⠠⠨⡐⡐⡐⡌⡆⣇⠧⣓⠡⠅⠆⠀⠀
+⠀⠀⠀⠀⠀⠀⠀⠈⢪⢪⢪⠪⡪⡢⡱⡨⡊⡢⢐⠠⢑⠕⢔⣊⢆⢦⣪⢎⣞⣜⢭⠤⠄⠀⠀
+⠀⠀⠀⠀⠀⠀⠀⠀⠀⢣⠣⡣⡑⢌⠢⡊⡢⠨⡔⡕⡕⣍⠲⢴⢕⣝⢯⢟⠷⠫⠗⠀⠀⠀⠀
+⠀⠀⠀⠀⠀⠀⠀⡐⡀⠄⡑⡐⡈⡂⡑⣐⣠⢳⡳⣵⢕⡶⣟⢗⢿⣚⡹⠵⣟⠦⠀⠀⠀⠀⠀
+⠀⠀⠀⠀⠀⠀⢀⢂⢢⢑⠰⢐⢐⡐⢄⢓⡕⣟⢮⢯⢻⡟⡎⢯⢯⢯⡻⠶⡄⠀⠀⠀⠀⠀⠀
+⠀⠀⠀⠀⠀⠀⠀⢢⠃⠉⢮⡢⡑⡊⠢⠨⡚⡸⡘⢎⢲⠙⡽⡸⢌⢷⡙⠆⠀⠀⠀⠀⠀⠀⠀
+⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠙⢮⣮⢊⢂⢆⢂⠻⢔⠐⢧⠘⠍⠈⠃⠀⠀⠀⠀⠀⠀⠀⠀⠀
+⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠉⡆⢆⣆⡂⠅⠢⢀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀
+⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⢀⢔⠒⡚⠢⠩⡢⠡⢑⢢⠨⢐⢀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀
+⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠁⠀⠀⠈⠪⡿⡐⠄⡑⡐⡐⡈⡐⠀⠀⠀⠀⠀⠀⠀⠀⠀
+⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠁⠻⢘⠐⡐⠄⢂⠢⡐⢐⠀⠀⠀⠀⠀⠀⠀⠀
+⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠈⠂⠑⠀⠀⠁⠈⠂⠈⠀⠀⠀⠀⠀⠀⠀
+"""
+
+
 def argparse():
     """
     parse the argument to find path of file to extract info from
@@ -37,13 +59,18 @@ def verify_output(output_path):
             exit(-1)
 
 
-def init_logger():
+def init_logger(disable_logger):
     """
     creates a logger
     :return:
     """
-    logging.basicConfig(level=logging.INFO, format='%(asctime)s %(levelname)s: %(message)s')
-    logging.info("Copyright © 2023 CyberArk Software Ltd. All rights reserved.")
+    if disable_logger is True:
+        logging.disable()
+
+    else:
+        logging.basicConfig(level=logging.INFO, format='%(asctime)s %(levelname)s: %(message)s')
+        logging.info(logo)
+        logging.info("Copyright © 2023 CyberArk Software Ltd. All rights reserved.\n\n")
 
 
 def find_object_number(obj_start, content):
@@ -91,7 +118,22 @@ def read_file(filename):
     return content
 
 
-def write_file(obj_num, file_content, output_path, file_type, cmap_len=None, file_extension=None):
+def write_raw_file(image_data, obj_num, output, extension=None):
+    """
+    save binary as is in file
+    :param image_data: the binary of the image
+    :param obj_num: the number of the object
+    :param output: the output path of the file
+    :param extension: the extension of the file
+    """
+    if extension is None:
+        extension = '.jpg'
+    image = open(output + '//' + str(obj_num) + extension, "wb")
+    image.write(image_data)
+    image.close()
+
+
+def write_to_file(obj_num, file_content, output_path, file_type, document, cmap_len=None, file_extension=None):
     """
     write extracted content to file
     :param obj_num: the object from which the content was extracted
@@ -102,9 +144,19 @@ def write_file(obj_num, file_content, output_path, file_type, cmap_len=None, fil
     :param file_extension: the extension of the file
     :return:
     """
-    file_name = get_file_name(obj_num, file_type, cmap_len, file_extension)
-    with open(f"{output_path}/{file_name}", "wb") as f:
-        f.write(file_content)
+    if file_type == "text":
+        document.add_paragraph(file_content.decode())
+    else:
+        for file_name in os.listdir('./temp'):
+            file_path = os.path.join('./temp', file_name)
+            try:
+                document.add_picture(file_path)
+            except Exception as e:
+                logging.error(f'{e} in object number {str(obj_num)}')
+            os.remove(file_path)
+    # file_name = get_file_name(obj_num, file_type, cmap_len, file_extension)
+    # with open(f"{output_path}/{file_name}", "wb") as f:
+    #     f.write(file_content)
     log = f"Extracted {file_type} content from object {obj_num}" if (cmap_len is None) else \
         f"Extracted {file_type} content from object {obj_num} with cmap from {cmap_len}"
     logging.info(log)
@@ -131,18 +183,6 @@ def get_file_name(obj_num, file_type, cmap, file_extension):
         file_name += 'hex' + str(cmap)
     file_name += file_extension if file_extension is not None else file_types[file_type]
     return file_name
-
-
-def save_jpeg2000_image(image_data, obj_num, output):
-    """
-    save as jpeg2000
-    :param image_data: the binary of the image
-    :param obj_num: the number of the object
-    :param output: the output path of the file
-    """
-    image = open(output + '//' + str(obj_num) + ".jp2", "wb")
-    image.write(image_data)
-    image.close()
 
 
 def save_jpeg_image(image_content, mode, obj_num, output):
