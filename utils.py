@@ -130,12 +130,12 @@ def write_raw_file(image_data, obj_num, output, extension=None):
     """
     if extension is None:
         extension = '.jpg'
-    image = open(output + '//' + str(obj_num) + extension, "wb")
+    image = open(os.path.join(output, str(obj_num)) + extension, "wb")
     image.write(image_data)
     image.close()
 
 
-def write_to_file(obj_num, file_content, output_path, file_type, separated_files, cmap_len=None):
+def write_to_file(obj_num, file_content, output_path, file_type, separated_files, filter_array=None, mode=None, cmap_len=None):
     """
     write extracted content to file
     :param obj_num: the object from which the content was extracted
@@ -143,18 +143,27 @@ def write_to_file(obj_num, file_content, output_path, file_type, separated_files
     :param output_path: the path to the output folder where the extracted content is to be written
     :param file_type: the type of file image or text
     :param separated_files: boolean for saving in separated files or in docx file
+    :param filter_array: the filters of an image
+    :param mode: the mode of the image
     :param cmap_len: if text was decoded with cmap, this is the length of the bytes in the cmaps
     :return:
     """
     if file_type == "text":
         if separated_files:
-            with open(output_path + f'\\' + str(obj_num) + '.txt', 'w+') as txt_file:
+            with open(os.path.join(output_path, str(obj_num) + '.txt'), 'w+') as txt_file:
                 txt_file.write(file_content.decode())
         else:
             document.add_paragraph(file_content.decode())
     else:
-        for file_name in os.listdir('./temp'):
-            file_path = os.path.join('./temp', file_name)
+        temp_file_path = os.path.join('.', 'temp')
+        if '/DCTDecode' in filter_array:
+            save_jpeg_image(file_content, mode, obj_num, temp_file_path)
+        elif '/JPXDecode' in filter_array:
+            write_raw_file(file_content, obj_num, temp_file_path, '.jp2')
+        else:
+            write_raw_file(file_content, obj_num, temp_file_path)
+        for file_name in os.listdir(temp_file_path):
+            file_path = os.path.join(temp_file_path, file_name)
             if separated_files is not True:
                 try:
                     document.add_picture(file_path)
@@ -166,29 +175,6 @@ def write_to_file(obj_num, file_content, output_path, file_type, separated_files
     log = f"Extracted {file_type} content from object {obj_num}" if (cmap_len is None) else \
         f"Extracted {file_type} content from object {obj_num} with cmap from {cmap_len}"
     logging.info(log)
-
-
-def get_file_name(obj_num, file_type, cmap, file_extension):
-    """
-    build a file name for a file to be written
-    :param obj_num: the object from which the content was extracted
-    :param file_type: the type of file image or text
-    :param cmap: if text was decoded with cmap, this is the object number of the cmap
-    :param file_extension: extension of the file
-    :return: file name
-    """
-    file_types = {
-        "image": ".jpg",
-        "text": ".txt"
-    }
-
-    file_name = str(obj_num)
-    if cmap is not None and cmap != "hex":
-        file_name += '_cmap_len_' + str(cmap)
-    elif cmap is not None and cmap == "hex":
-        file_name += 'hex' + str(cmap)
-    file_name += file_extension if file_extension is not None else file_types[file_type]
-    return file_name
 
 
 def save_jpeg_image(image_content, mode, obj_num, output):

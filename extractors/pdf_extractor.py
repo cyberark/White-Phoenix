@@ -20,6 +20,7 @@ class PdfExtractor(Extractor):
         self.helper_pdf = 'helper.pdf'
         self.temp_pdf = 'temp.pdf'
         self.binary_to_replace = b'AABBAA'
+        self.original_binary_to_replace = b'AABBAA'
 
     def extract_content(self):
         """
@@ -48,14 +49,12 @@ class PdfExtractor(Extractor):
         """
         self.save_image_in_temp_pdf(pdf_object)
         self.extract_image(obj_num)
-        utils.write_to_file(obj_num, None, self.output, 'image', self.separated_files)
 
     def extract_image(self, obj_num):
         """
         extract the image
         :param obj_num: the number of the object
         """
-        output = self.output if self.separated_files is True else './temp'
         pdf = open('temp.pdf', 'rb')
         try:
             pdf_reader = PyPDF2.PdfReader(pdf)
@@ -73,14 +72,9 @@ class PdfExtractor(Extractor):
                     image_stream = xobject[obj]
                     filter_array = image_stream.get("/Filter", ())
                     image_data = self.decode_image(image_stream._data, filter_array)
-                    if '/DCTDecode' in filter_array:
-                        utils.save_jpeg_image(image_data, mode, obj_num, output)
-                    elif '/JPXDecode' in filter_array:
-                        utils.write_raw_file(image_data, obj_num, output, '.jp2')
-                    else:
-                        utils.write_raw_file(image_data, obj_num, output)
+                    utils.write_to_file(obj_num, image_data, self.output, 'image', self.separated_files,
+                                        filter_array=filter_array, mode=mode)
         pdf.close()
-        os.remove(self.temp_pdf)
 
     def save_image_in_temp_pdf(self, image_content):
         """
@@ -88,13 +82,15 @@ class PdfExtractor(Extractor):
         :param image_content: the image content
         """
         image_content = image_content[image_content.find(b'<<'):]
-        pdf_helper = open(self.helper_pdf, 'rb')
+        pdf_helper = open(self.helper_pdf, 'rb') if self.binary_to_replace is self.original_binary_to_replace else open(
+            self.temp_pdf, 'rb')
         pdf_helper_content = pdf_helper.read()
         pdf_helper.close()
         temp_pdf_data = pdf_helper_content.replace(self.binary_to_replace, image_content)
         temp_pdf_file = open(self.temp_pdf, 'wb')
         temp_pdf_file.write(temp_pdf_data)
         temp_pdf_file.close()
+        self.binary_to_replace = image_content
 
     def decode_image(self, image_content, image_filter_array):
         """
@@ -182,7 +178,8 @@ class PdfExtractor(Extractor):
             try:
                 extracted_text = self.get_extracted_text(mapped_content, key_value, obj_num)
                 if len(extracted_text) > 0:
-                    utils.write_to_file(obj_num, extracted_text, self.output, "text", self.separated_files, cmap_len=key_value)
+                    utils.write_to_file(obj_num, extracted_text, self.output, "text", self.separated_files,
+                                        cmap_len=key_value)
                     should_try_hex = False
             except Exception as e:
                 logging.error(f'error: {e}, object number:{obj_num}, key length:{key_value}')
@@ -190,7 +187,8 @@ class PdfExtractor(Extractor):
             # try hex mapping
             try:
                 hex_mapped_content = binascii.unhexlify(mapped_content).replace(b"\x00", b"")
-                utils.write_to_file(obj_num, hex_mapped_content, self.output, "text", self.separated_files, cmap_len="hex")
+                utils.write_to_file(obj_num, hex_mapped_content, self.output, "text", self.separated_files,
+                                    cmap_len="hex")
             except Exception as e:
                 logging.error(f'error while trying to do hex mapping: {e}, object number:{obj_num}')
 

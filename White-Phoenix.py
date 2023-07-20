@@ -1,4 +1,6 @@
 import logging
+import os.path
+
 import utils
 from extractors.pdf_extractor import PdfExtractor
 from extractors.zip_extractor import ZipExtractor
@@ -19,6 +21,8 @@ def main():
         logging.error("file Type not supported")
         exit(-1)
     extractor.extract_content()
+    if os.path.exists('temp.pdf'):
+        os.remove('temp.pdf')
 
 
 if __name__ == '__main__':
