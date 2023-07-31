@@ -1,3 +1,4 @@
+import threading
 import zlib
 import logging
 import os
@@ -5,7 +6,6 @@ from argparse import ArgumentParser
 from io import BytesIO
 from PIL import Image
 import numpy as np
-from docx import Document
 
 logo = """
 ⠀⠠⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠠⠀⠀⠀⠀⠀
@@ -28,16 +28,13 @@ logo = """
 ⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠈⠂⠑⠀⠀⠁⠈⠂⠈⠀⠀⠀⠀⠀⠀⠀
 """
 
-document = Document()
-
-
 def argparse():
     """
     parse the argument to find path of file to extract info from
     :return: arguments
     """
     parser = ArgumentParser(description="Recover text and images from partially encrypted files")
-    parser.add_argument("-f", "--file", required=True, dest="filename", metavar="FILE",
+    parser.add_argument("-f", "--file", required=False, dest="filename", metavar="FILE",
                         help="Path to encrypted file")
     parser.add_argument("-o", "--output", required=True, dest="output", metavar="FOLDER",
                         help="Path to folder to save extracted content")
@@ -45,6 +42,8 @@ def argparse():
                         help="Extract to separate files")
     parser.add_argument("-dl", "--disable-log", required=False, dest="disable_log", action='store_true',
                         help="Disable the log")
+    parser.add_argument("-d", "--dir", required=False, dest="dir", metavar="FOLDER",
+                        help="Check for files recursively from a specific folder")
     return parser.parse_args()
 
 
@@ -130,12 +129,14 @@ def write_raw_file(image_data, obj_num, output, extension=None):
     """
     if extension is None:
         extension = '.jpg'
-    image = open(os.path.join(output, str(obj_num)) + extension, "wb")
+    save_path = os.path.join(output, threading.current_thread().name, str(obj_num) + "_" + threading.current_thread().name + extension)
+    image = open(save_path, "wb")
     image.write(image_data)
     image.close()
+    return save_path
 
 
-def write_to_file(obj_num, file_content, output_path, file_type, separated_files, filter_array=None, mode=None, cmap_len=None):
+def write_to_file(obj_num, file_content, output_path, file_type, separated_files, document, filter_array=None, mode=None, cmap_len=None):
     """
     write extracted content to file
     :param obj_num: the object from which the content was extracted
@@ -143,6 +144,7 @@ def write_to_file(obj_num, file_content, output_path, file_type, separated_files
     :param output_path: the path to the output folder where the extracted content is to be written
     :param file_type: the type of file image or text
     :param separated_files: boolean for saving in separated files or in docx file
+    :param document: a document object
     :param filter_array: the filters of an image
     :param mode: the mode of the image
     :param cmap_len: if text was decoded with cmap, this is the length of the bytes in the cmaps
@@ -157,21 +159,20 @@ def write_to_file(obj_num, file_content, output_path, file_type, separated_files
     else:
         temp_file_path = os.path.join('.', 'temp')
         if '/DCTDecode' in filter_array:
-            save_jpeg_image(file_content, mode, obj_num, temp_file_path)
+            temp_image_file_name = save_jpeg_image(file_content, mode, obj_num, temp_file_path)
         elif '/JPXDecode' in filter_array:
-            write_raw_file(file_content, obj_num, temp_file_path, '.jp2')
+            temp_image_file_name = write_raw_file(file_content, obj_num, temp_file_path, '.jp2')
         else:
-            write_raw_file(file_content, obj_num, temp_file_path)
-        for file_name in os.listdir(temp_file_path):
-            file_path = os.path.join(temp_file_path, file_name)
-            if separated_files is not True:
-                try:
-                    document.add_picture(file_path)
-                except Exception as e:
-                    logging.error(f'{e} in object number {str(obj_num)}')
-                os.remove(file_path)
-            else:
-                os.replace(file_path, os.path.join(output_path, file_name))
+            temp_image_file_name = write_raw_file(file_content, obj_num, temp_file_path)
+        if separated_files is not True:
+            try:
+                document.add_paragraph()
+                document.add_picture(temp_image_file_name)
+            except Exception as e:
+                logging.error(f'{e} in object number {str(obj_num)}')
+        else:
+            os.replace(temp_image_file_name, os.path.join(output_path, temp_image_file_name))
+
     log = f"Extracted {file_type} content from object {obj_num}" if (cmap_len is None) else \
         f"Extracted {file_type} content from object {obj_num} with cmap from {cmap_len}"
     logging.info(log)
@@ -195,8 +196,13 @@ def save_jpeg_image(image_content, mode, obj_num, output):
         inv_data = np.full(im_data.shape, 255, dtype='B')
         inv_data -= im_data
         image = Image.frombytes(image.mode, image.size, inv_data.tobytes())
-    image.save(output + "//" + str(obj_num) + ".jpg")
+    save_path = os.path.join(output, threading.current_thread().name, str(obj_num) + threading.current_thread().name + ".jpg")
+    image.save(save_path)
+    return save_path
 
 
-def save_doc_file(output):
-    document.save(output)
+def save_doc_file(output, filename, document):
+    dir_path = os.path.join(output, filename.replace(os.sep, '_').replace('.', '_'))
+    if not os.path.exists(dir_path):
+        os.mkdir(os.path.join(output, filename.replace(os.sep, '_').replace('.', '_')))
+    document.save(os.path.join(dir_path, dir_path + '.docx'))

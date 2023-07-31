@@ -2,25 +2,29 @@ import logging
 import os
 import re
 import binascii
+import threading
 import PyPDF2
 import utils
 import pdf_parsers
 from extractors.extractor import Extractor
 from PyPDF2.filters import *
+from docx import Document
 
 
 class PdfExtractor(Extractor):
-    def __init__(self, file_content, output, separated_files):
-        super().__init__(file_content, output)
+    def __init__(self, file_content, output, separated_files, filename):
+        super().__init__(file_content, output, filename=filename)
         self.mapped_objects = dict()
         self.cmap_objects = dict()
         self.mapping_keys = dict()
         self.merged_cmap = dict()
         self.separated_files = separated_files
         self.helper_pdf = 'helper.pdf'
-        self.temp_pdf = 'temp.pdf'
+        self.temp_pdf = os.path.join('temp', threading.current_thread().name, threading.current_thread().name + '_temp.pdf')
         self.binary_to_replace = b'AABBAA'
         self.original_binary_to_replace = b'AABBAA'
+        self.document = Document()
+        os.mkdir(os.path.join('.', 'temp', threading.current_thread().name))
 
     def extract_content(self):
         """
@@ -38,7 +42,9 @@ class PdfExtractor(Extractor):
         if len(self.mapped_objects) > 0:
             for obj_num in self.mapped_objects:
                 self.extract_text_mapped(obj_num)
-        utils.save_doc_file(os.path.join(self.output, 'out.docx'))
+        utils.save_doc_file(self.output, self.filename, self.document)
+        # if os.path.exists(self.temp_pdf):
+        #     os.remove(self.temp_pdf)
 
     def extract_stream_image(self, pdf_object, obj_num):
         """
@@ -55,10 +61,11 @@ class PdfExtractor(Extractor):
         extract the image
         :param obj_num: the number of the object
         """
-        pdf = open('temp.pdf', 'rb')
+        pdf = open(self.temp_pdf, 'rb')
         try:
             pdf_reader = PyPDF2.PdfReader(pdf)
-        except:
+        except Exception as e:
+            logging.error(e)
             return
         for page_num in range(0, len(pdf_reader.pages)):
             page_obj = pdf_reader.pages[page_num]
@@ -73,7 +80,7 @@ class PdfExtractor(Extractor):
                     filter_array = image_stream.get("/Filter", ())
                     image_data = self.decode_image(image_stream._data, filter_array)
                     utils.write_to_file(obj_num, image_data, self.output, 'image', self.separated_files,
-                                        filter_array=filter_array, mode=mode)
+                                        document=self.document, filter_array=filter_array, mode=mode)
         pdf.close()
 
     def save_image_in_temp_pdf(self, image_content):
@@ -164,7 +171,7 @@ class PdfExtractor(Extractor):
                 extracted_text += s[i].to_bytes(1, 'big')
 
         if len(extracted_text.strip()) > 0:
-            utils.write_to_file(obj_num, extracted_text, self.output, "text", self.separated_files)
+            utils.write_to_file(obj_num, extracted_text, self.output, "text", self.separated_files, self.document)
 
     def extract_text_mapped(self, obj_num):
         """
@@ -179,7 +186,7 @@ class PdfExtractor(Extractor):
                 extracted_text = self.get_extracted_text(mapped_content, key_value, obj_num)
                 if len(extracted_text) > 0:
                     utils.write_to_file(obj_num, extracted_text, self.output, "text", self.separated_files,
-                                        cmap_len=key_value)
+                                        self.document, cmap_len=key_value)
                     should_try_hex = False
             except Exception as e:
                 logging.error(f'error: {e}, object number:{obj_num}, key length:{key_value}')
@@ -188,7 +195,7 @@ class PdfExtractor(Extractor):
             try:
                 hex_mapped_content = binascii.unhexlify(mapped_content).replace(b"\x00", b"")
                 utils.write_to_file(obj_num, hex_mapped_content, self.output, "text", self.separated_files,
-                                    cmap_len="hex")
+                                    self.document, cmap_len="hex")
             except Exception as e:
                 logging.error(f'error while trying to do hex mapping: {e}, object number:{obj_num}')
 
