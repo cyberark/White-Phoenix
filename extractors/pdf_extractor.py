@@ -42,9 +42,8 @@ class PdfExtractor(Extractor):
         if len(self.mapped_objects) > 0:
             for obj_num in self.mapped_objects:
                 self.extract_text_mapped(obj_num)
-        utils.save_doc_file(self.output, self.filename, self.document)
-        # if os.path.exists(self.temp_pdf):
-        #     os.remove(self.temp_pdf)
+        if self.separated_files is not True:
+            utils.save_doc_file(self.output, self.filename, self.document)
 
     def extract_stream_image(self, pdf_object, obj_num):
         """
@@ -80,7 +79,7 @@ class PdfExtractor(Extractor):
                     filter_array = image_stream.get("/Filter", ())
                     image_data = self.decode_image(image_stream._data, filter_array)
                     utils.write_to_file(obj_num, image_data, self.output, 'image', self.separated_files,
-                                        document=self.document, filter_array=filter_array, mode=mode)
+                                        document=self.document, filter_array=filter_array, mode=mode, file_name=self.filename)
         pdf.close()
 
     def save_image_in_temp_pdf(self, image_content):
@@ -171,7 +170,7 @@ class PdfExtractor(Extractor):
                 extracted_text += s[i].to_bytes(1, 'big')
 
         if len(extracted_text.strip()) > 0:
-            utils.write_to_file(obj_num, extracted_text, self.output, "text", self.separated_files, self.document)
+            utils.write_to_file(obj_num, extracted_text, self.output, "text", self.separated_files, self.document, file_name=self.filename)
 
     def extract_text_mapped(self, obj_num):
         """
@@ -186,7 +185,7 @@ class PdfExtractor(Extractor):
                 extracted_text = self.get_extracted_text(mapped_content, key_value, obj_num)
                 if len(extracted_text) > 0:
                     utils.write_to_file(obj_num, extracted_text, self.output, "text", self.separated_files,
-                                        self.document, cmap_len=key_value)
+                                        self.document, cmap_len=key_value, file_name=self.filename)
                     should_try_hex = False
             except Exception as e:
                 logging.error(f'error: {e}, object number:{obj_num}, key length:{key_value}')

@@ -28,6 +28,7 @@ def delete_folder_contents(folder_path):
             delete_folder_contents(item_path)
             os.rmdir(item_path)
 
+
 def get_paths(dir):
     if dir:
         return [dir]

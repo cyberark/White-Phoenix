@@ -136,7 +136,7 @@ def write_raw_file(image_data, obj_num, output, extension=None):
     return save_path
 
 
-def write_to_file(obj_num, file_content, output_path, file_type, separated_files, document, filter_array=None, mode=None, cmap_len=None):
+def write_to_file(obj_num, file_content, output_path, file_type, separated_files, document, filter_array=None, mode=None, cmap_len=None, file_name=None):
     """
     write extracted content to file
     :param obj_num: the object from which the content was extracted
@@ -148,16 +148,20 @@ def write_to_file(obj_num, file_content, output_path, file_type, separated_files
     :param filter_array: the filters of an image
     :param mode: the mode of the image
     :param cmap_len: if text was decoded with cmap, this is the length of the bytes in the cmaps
+    :param file_name: the name of the file
     :return:
     """
     if file_type == "text":
         if separated_files:
-            with open(os.path.join(output_path, str(obj_num) + '.txt'), 'w+') as txt_file:
+            dir_path = os.path.join(output_path, file_name.replace(os.sep, '_').replace('.', '_'))
+            if not os.path.exists(dir_path):
+                os.mkdir(os.path.join(dir_path))
+            with open(os.path.join(dir_path, str(obj_num) + '.txt'), 'w+') as txt_file:
                 txt_file.write(file_content.decode())
         else:
             document.add_paragraph(file_content.decode())
     else:
-        temp_file_path = os.path.join('.', 'temp')
+        temp_file_path = os.path.join(os.getcwd(), 'temp')
         if '/DCTDecode' in filter_array:
             temp_image_file_name = save_jpeg_image(file_content, mode, obj_num, temp_file_path)
         elif '/JPXDecode' in filter_array:
@@ -171,7 +175,10 @@ def write_to_file(obj_num, file_content, output_path, file_type, separated_files
             except Exception as e:
                 logging.error(f'{e} in object number {str(obj_num)}')
         else:
-            os.replace(temp_image_file_name, os.path.join(output_path, temp_image_file_name))
+            dir_path = os.path.join(output_path, file_name.replace(os.sep, '_').replace('.', '_'))
+            if not os.path.exists(dir_path):
+                os.mkdir(os.path.join(dir_path))
+            os.replace(temp_image_file_name, os.path.join(dir_path, temp_image_file_name.replace(threading.current_thread().name, "").replace(os.sep, '_').replace('.', '_')))
 
     log = f"Extracted {file_type} content from object {obj_num}" if (cmap_len is None) else \
         f"Extracted {file_type} content from object {obj_num} with cmap from {cmap_len}"
