@@ -91,7 +91,7 @@ def main():
             lock.release()
             thread_pool.submit(extract_data_from_file, args.output, args.separated_files, file_path)
         thread_pool.shutdown(wait=True)
-        delete_folder_contents('temp')
+    delete_folder_contents('temp')
 
 
 if __name__ == '__main__':
