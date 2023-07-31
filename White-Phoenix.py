@@ -74,6 +74,8 @@ def find_all_files_path(folder_path, output):
 
 def main():
     global path_queue
+    if os.path.exists('temp') is not True:
+        os.mkdir('temp')
     args = utils.argparse()
     utils.init_logger(args.disable_log)
     if args.filename:
