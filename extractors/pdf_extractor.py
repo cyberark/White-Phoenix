@@ -1,16 +1,30 @@
+import logging
+import os
 import re
 import binascii
+import threading
+import PyPDF2
 import utils
 import pdf_parsers
 from extractors.extractor import Extractor
+from PyPDF2.filters import *
+from docx import Document
 
 
 class PdfExtractor(Extractor):
-    def __init__(self, file_content, output):
-        super().__init__(file_content, output)
+    def __init__(self, file_content, output, separated_files, filename):
+        super().__init__(file_content, output, filename=filename)
         self.mapped_objects = dict()
         self.cmap_objects = dict()
         self.mapping_keys = dict()
+        self.merged_cmap = dict()
+        self.separated_files = separated_files
+        self.helper_pdf = 'helper.pdf'
+        self.temp_pdf = os.path.join('temp', threading.current_thread().name, threading.current_thread().name + '_temp.pdf')
+        self.binary_to_replace = b'AABBAA'
+        self.original_binary_to_replace = b'AABBAA'
+        self.document = Document()
+        os.mkdir(os.path.join('.', 'temp', threading.current_thread().name))
 
     def extract_content(self):
         """
@@ -28,6 +42,8 @@ class PdfExtractor(Extractor):
         if len(self.mapped_objects) > 0:
             for obj_num in self.mapped_objects:
                 self.extract_text_mapped(obj_num)
+        if self.separated_files is not True:
+            utils.save_doc_file(self.output, self.filename, self.document)
 
     def extract_stream_image(self, pdf_object, obj_num):
         """
@@ -36,12 +52,86 @@ class PdfExtractor(Extractor):
         :param obj_num: the number of the object with image in it
         :return:
         """
-        image_content = pdf_object.split(b"stream")[1][:-3].strip()
-        if b"FlateDecode" in pdf_object:
-            image_content = utils.flate_decode(image_content, obj_num)
-        # check content exists and isn't "junk" starting with null bytes
-        if image_content is not None and image_content[:4] != b"\x00" * 4:
-            utils.write_file(obj_num, image_content, self.output, "image")
+        self.save_image_in_temp_pdf(pdf_object)
+        self.extract_image(obj_num)
+
+    def extract_image(self, obj_num):
+        """
+        extract the image
+        :param obj_num: the number of the object
+        """
+        pdf = open(self.temp_pdf, 'rb')
+        try:
+            pdf_reader = PyPDF2.PdfReader(pdf)
+        except Exception as e:
+            logging.error(e)
+            return
+        for page_num in range(0, len(pdf_reader.pages)):
+            page_obj = pdf_reader.pages[page_num]
+            try:
+                xobject = page_obj['/Resources']['/XObject'].get_object()
+            except:
+                continue
+            for obj in xobject:
+                if xobject[obj]['/Subtype'] == '/Image':
+                    mode = self.get_image_mode(xobject[obj]['/ColorSpace'])
+                    image_stream = xobject[obj]
+                    filter_array = image_stream.get("/Filter", ())
+                    image_data = self.decode_image(image_stream._data, filter_array)
+                    utils.write_to_file(obj_num, image_data, self.output, 'image', self.separated_files,
+                                        document=self.document, filter_array=filter_array, mode=mode, file_name=self.filename)
+        pdf.close()
+
+    def save_image_in_temp_pdf(self, image_content):
+        """
+        saving the image in a temporary
+        :param image_content: the image content
+        """
+        image_content = image_content[image_content.find(b'<<'):]
+        pdf_helper = open(self.helper_pdf, 'rb') if self.binary_to_replace is self.original_binary_to_replace else open(
+            self.temp_pdf, 'rb')
+        pdf_helper_content = pdf_helper.read()
+        pdf_helper.close()
+        temp_pdf_data = pdf_helper_content.replace(self.binary_to_replace, image_content)
+        temp_pdf_file = open(self.temp_pdf, 'wb')
+        temp_pdf_file.write(temp_pdf_data)
+        temp_pdf_file.close()
+        self.binary_to_replace = image_content
+
+    def decode_image(self, image_content, image_filter_array):
+        """
+        decoded the image by filter
+        :param image_content: the byte array of the image
+        :param image_filter_array: array of filters of the image
+        :return: an image object
+        """
+        decoded_image = b""
+        if '/FlateDecode' in image_filter_array:
+            decoded_image = FlateDecode.decode(image_content)
+        elif "/ASCIIHexDecode" in image_filter_array:
+            decoded_image = ASCIIHexDecode.decode(image_content)
+        elif "/LZWDecode" in image_filter_array:
+            decoded_image = LZWDecode.decode(image_content)
+        elif "/ASCII85Decode" in image_filter_array:
+            decoded_image = ASCII85Decode.decode(image_content)
+        return decoded_image if decoded_image != b'' else image_content
+
+    def get_image_mode(self, color_space):
+        """
+        return the image mode
+        :param color_space: the color space of the image
+        :return: the mode of the image
+        """
+        mode = ""
+        if color_space == '/DeviceRGB':
+            mode = "RGB"
+        elif color_space == '/DeviceCMYK':
+            mode = "CMYK"
+        elif color_space == '/DeviceGray':
+            mode = "L"
+        elif color_space == "/Indexed" or color_space == "/ICCBased":
+            mode = "P"
+        return mode
 
     def inspect_flate_object(self, pdf_object, obj_num):
         """
@@ -50,7 +140,6 @@ class PdfExtractor(Extractor):
         :param obj_num: the number of the object to be inspected
         :return:
         """
-
         text_content = pdf_object.split(b"stream")[1][:-3].strip()
         text_content = utils.flate_decode(text_content, obj_num)
         if text_content is not None:
@@ -60,7 +149,7 @@ class PdfExtractor(Extractor):
                 elif b"<" in text_content:
                     self.mapped_objects[obj_num] = text_content
             elif b"beginbfchar" in text_content:
-                self.cmap_objects[obj_num] = pdf_parsers.parse_cmap(text_content)
+                self.cmap_objects[obj_num] = pdf_parsers.parse_cmap(text_content, self.merged_cmap)
 
     def extract_text_unmapped(self, obj_num, text_content):
         """
@@ -73,15 +162,15 @@ class PdfExtractor(Extractor):
         s = text_content[text_content.find(b"BT"): text_content.rfind(b"ET")]
         to_extract = False
         for i in range(len(s)):
-            if s[i] == ord(b"(") and s[i-1] != ord(b"\\"):
+            if s[i] == ord(b"(") and s[i - 1] != ord(b"\\"):
                 to_extract = True
-            elif s[i] == ord(b")") and s[i-1] != ord(b"\\"):
+            elif s[i] == ord(b")") and s[i - 1] != ord(b"\\"):
                 to_extract = False
             elif to_extract:
                 extracted_text += s[i].to_bytes(1, 'big')
 
         if len(extracted_text.strip()) > 0:
-            utils.write_file(obj_num, extracted_text, self.output, "text")
+            utils.write_to_file(obj_num, extracted_text, self.output, "text", self.separated_files, self.document, file_name=self.filename)
 
     def extract_text_mapped(self, obj_num):
         """
@@ -90,33 +179,54 @@ class PdfExtractor(Extractor):
         :return:
         """
         mapped_content = pdf_parsers.parse_mapped_content(self.mapped_objects[obj_num])
+        should_try_hex = True
+        for key_value in self.merged_cmap:
+            try:
+                extracted_text = self.get_extracted_text(mapped_content, key_value, obj_num)
+                if len(extracted_text) > 0:
+                    utils.write_to_file(obj_num, extracted_text, self.output, "text", self.separated_files,
+                                        self.document, cmap_len=key_value, file_name=self.filename)
+                    should_try_hex = False
+            except Exception as e:
+                logging.error(f'error: {e}, object number:{obj_num}, key length:{key_value}')
+        if should_try_hex:
+            # try hex mapping
+            try:
+                hex_mapped_content = binascii.unhexlify(mapped_content).replace(b"\x00", b"")
+                utils.write_to_file(obj_num, hex_mapped_content, self.output, "text", self.separated_files,
+                                    self.document, cmap_len="hex")
+            except Exception as e:
+                logging.error(f'error while trying to do hex mapping: {e}, object number:{obj_num}')
 
-        # try hex mapping
-        hex_mapped_content = binascii.unhexlify(mapped_content).replace(b"\x00", b"")
-        utils.write_file(obj_num, hex_mapped_content, self.output, "text", cmap="hex")
+    def get_extracted_text(self, mapped_content, key_len, obj_num):
+        """
+        extract the text.
+        :param mapped_content: the mapped content
+        :param key_len: the length of the key
+        :param obj_num: the number of the object
+        :return: the text of the object
+        """
+        unmapped_content = b""
+        mapped_array = self.get_mapped_keys(mapped_content, key_len, obj_num)
+        for key_value in mapped_array:
+            if key_value in self.merged_cmap[key_len]:
+                unmapped_content += self.merged_cmap[key_len][key_value]
+            else:
+                logging.debug(f"Could not find key:{key_value} in cmaps with the length of {key_len}")
+        extracted_text = binascii.unhexlify(unmapped_content)
+        decoded_extracted_text = extracted_text.decode('utf-16-be')
+        return decoded_extracted_text.encode('utf-8')
 
-        # try mappings from cmap objects
-        for cmap in self.cmap_objects:
-            unmapped_content = b""
-            mapped_array = self.get_mapped_keys(mapped_content, self.cmap_objects[cmap])
-
-            for key_value in mapped_array:
-                if key_value in self.cmap_objects[cmap]:
-                    unmapped_content += self.cmap_objects[cmap][key_value]
-            extracted_text = binascii.unhexlify(unmapped_content).replace(b"\x00", b"")
-            if len(extracted_text) > 0:
-                utils.write_file(obj_num, extracted_text, self.output, "text", cmap=cmap)
-
-    def get_mapped_keys(self, mapped_content, cmap):
+    def get_mapped_keys(self, mapped_content, key_len, obj_num):
         """
         break mapped data into chucks of size key length so the mapped data can be unmapped
         save the breakdown into mapping keys to avoid having to repeat the same breakdown over and over
         :param mapped_content: the mapped content to break into chunks
-        :param cmap: the cmap dict containing the key length
+        :param key_len: the len of the cmap keys
+        :param obj_num: the number of the object (unique)
         :return: the mapped data broken down into chunks of size cmap key length
         """
-        key_len = cmap["key length"]
-        if key_len not in self.mapping_keys:
-            self.mapping_keys[key_len] = \
-                [mapped_content[i: i + key_len] for i in range(0, len(mapped_content), key_len)]
-        return self.mapping_keys[key_len]
+        if obj_num not in self.mapping_keys:
+            self.mapping_keys[obj_num] = [mapped_content[i: i + key_len] for i in
+                                          range(0, len(mapped_content), key_len)]
+        return self.mapping_keys[obj_num]

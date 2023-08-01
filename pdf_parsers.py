@@ -28,7 +28,7 @@ def parse_to_objects(content):
     return pdf_objects
 
 
-def parse_cmap(text_content):
+def parse_cmap(text_content, merged_cmap):
     """
     parses cmap object to create a character mapping for text objects that rely on cmaps
     :param text_content: the content of the cmap object
@@ -51,12 +51,15 @@ def parse_cmap(text_content):
     cmap_dict = dict()
 
     for cmap_entry in cmap_list:
-        key = cmap_entry[1: cmap_entry.find(b">")]
-        value = cmap_entry[cmap_entry.rfind(b"<") + 1: -1]
+        key = cmap_entry[1: cmap_entry.find(b">")].upper()
+        value = cmap_entry[cmap_entry.rfind(b"<") + 1: -1].upper()
         cmap_dict[key] = value
 
     if key is not None:
-        cmap_dict["key length"] = len(key)
+        if len(key) in merged_cmap:
+            merged_cmap[len(key)].update(cmap_dict)
+        else:
+            merged_cmap[len(key)] = cmap_dict
         return cmap_dict
 
 

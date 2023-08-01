@@ -10,6 +10,10 @@ Usage:
 
     -f/--file : path to the encrypted file
     -o/--output : path to folder to save the content extracted from the file
+    -s/--separated-files : extract the content to separated files
+    -dl/--disale-log : disable the log
+    -d/--dir : start scanning from a specific path
+    
 
 Currently supported filetypes include:
     'pdf', 
@@ -22,6 +26,8 @@ Currently supported filetypes include:
 ### Output files
 
 **PDF:**
+By default, the output is saved to docx file to allow for editing.
+However, sometimes images are not able to load in the docx, so there is an option the save the files separately.
 Each object is saved as a seperate file with the object number used as the file name.
 Text objects that use cmap have multiple files created for every possible mapping found in the file as well as a possible hex mapping.
 Cmap text objects have an aditional part of the name to indicate which mapping was used.
