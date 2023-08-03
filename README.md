@@ -1,40 +1,49 @@
 # White Phoenix
 
-This tool recovers content from files encrypted by Ransomware using “intermittent encryption”
+This tool recovers content from files encrypted by Ransomware using “intermittent encryption” based on the [White Phoenix: Beating Intermittent Encryption](https://www.cyberark.com/resources/threat-research-blog/white-phoenix-beating-intermittent-encryption) research.
 
-Tested on:
-    BlackCat/ALPHV Ransomware, Play Ransomware, Qilin/Agenda Ransomware, BianLian Ransomware, DarkBit
+Tested on:<br>
+BlackCat/ALPHV Ransomware, Play Ransomware, Qilin/Agenda Ransomware, BianLian Ransomware, DarkBit
 
 Usage:
-    python3 White-Phoenix.py [-h] -f/--file FILE -o/--output FOLDER 
+```
+usage: White-Phoenix.py [-h] [-f FILE] -o FOLDER [-s] [-dl] [-d OLDER]
 
-    -f/--file : path to the encrypted file
-    -o/--output : path to folder to save the content extracted from the file
-    -s/--separated-files : extract the content to separated files
-    -dl/--disale-log : disable the log
-    -d/--dir : start scanning from a specific path
+Recover text and images from partially encrypted files
+
+options:
+  -h, --help            show this help message and exit
+  -f FILE, --file FILE  Path to encrypted file
+  -o FOLDER, --output FOLDER
+                        Path to folder to save extracted content
+  -s, --separated-files
+                        Extract to separate files
+  -dl, --disable-log    Disable the log
+  -d FOLDER, --dir FOLDER
+                        Check for files recursively from a specific folder
+```
     
 
 Currently supported filetypes include:
-    'pdf', 
-    'docx', 'docm', 'dotx', 'dotm', 'odt',
-    'xlsx', 'xlsm', 'xltx', 'xltm', 'xlsb', 'xlam', 'ods'
-    'pptx', 'pptm', 'ptox', 'potm', 'ppsx', 'ppsm', 'odp'
-    'zip'
+* pdf
+* docx, docm, dotx, dotm, odt
+* xlsx, xlsm, xltx, xltm, xlsb, xlam, ods
+* pptx, pptm, ptox, potm, ppsx, ppsm, odp
+* zip
 
 
 ### Output files
 
-**PDF:**
-By default, the output is saved to docx file to allow for editing.
-However, sometimes images are not able to load in the docx, so there is an option the save the files separately.
-Each object is saved as a seperate file with the object number used as the file name.
-Text objects that use cmap have multiple files created for every possible mapping found in the file as well as a possible hex mapping.
-Cmap text objects have an aditional part of the name to indicate which mapping was used.
-Please note this means that many cmap files will either have meaningless content or possibly duplicates content.
+**PDF:**<br>
+By default, the output is saved to docx file to allow for editing.<br>
+However, sometimes images are not able to load in the docx, so there is an option the save the files separately.<br>
+Each object is saved as a seperate file with the object number used as the file name.<br>
+Text objects that use cmap have multiple files created for every possible mapping found in the file as well as a possible hex mapping.<br>
+Cmap text objects have an aditional part of the name to indicate which mapping was used.<br>
+Please note this means that many cmap files will either have meaningless content or possibly duplicates content.<br>
 Not all image filters are supported however all the image objects are extracted, this means that not all the images are usable.
 
-
+<br>
 
 **Office**
 
