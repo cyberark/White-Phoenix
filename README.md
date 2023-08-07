@@ -6,7 +6,7 @@ Tested on:
     BlackCat/ALPHV Ransomware, Play Ransomware, Qilin/Agenda Ransomware, BianLian Ransomware, DarkBit
 
 Usage:
-    python3 White-Phoenix.py [-h] -f/--file FILE -o/--output FOLDER 
+    python3 White-Phoenix.py [-h] [-f/--file FILE] [-s/--separated-files] [-dl/--disable-log] [-d/--dir] -o/--output FOLDER 
 
     -f/--file : path to the encrypted file
     -o/--output : path to folder to save the content extracted from the file
