@@ -211,5 +211,5 @@ def save_jpeg_image(image_content, mode, obj_num, output):
 def save_doc_file(output, filename, document):
     dir_path = os.path.join(output, filename.replace(os.sep, '_').replace('.', '_').replace(":", "_"))
     if not os.path.exists(dir_path):
-        os.mkdir(os.path.join(output, filename.replace(os.sep, '_').replace('.', '_')))
+        os.mkdir(dir_path)
     document.save(os.path.join(dir_path, filename.replace(os.sep, '_').replace('.', '_').replace(":", "_") + '.docx'))
