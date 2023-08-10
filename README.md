@@ -1,6 +1,15 @@
 # White Phoenix
+![White-Phoenix-logo](https://github.com/2niknatan/White-Phoenix/assets/109152039/2f34f624-1c53-4c2c-9716-3543f29dfa65)
 
 This tool recovers content from files encrypted by Ransomware using “intermittent encryption”
+
+# Example:
+
+
+
+https://github.com/2niknatan/White-Phoenix/assets/109152039/3fe5ddd3-7f6c-4763-88a7-ae96bc637bfd
+
+
 
 Tested on:
     BlackCat/ALPHV Ransomware, Play Ransomware, Qilin/Agenda Ransomware, BianLian Ransomware, DarkBit
@@ -26,12 +35,12 @@ Currently supported filetypes include:
 ### Output files
 
 **PDF:**
-By default, the output is saved to docx file to allow for editing.
-However, sometimes images are not able to load in the docx, so there is an option the save the files separately.
-Each object is saved as a seperate file with the object number used as the file name.
-Text objects that use cmap have multiple files created for every possible mapping found in the file as well as a possible hex mapping.
-Cmap text objects have an aditional part of the name to indicate which mapping was used.
-Please note this means that many cmap files will either have meaningless content or possibly duplicates content.
+By default, the output is saved to docx file to allow for editing.<br>
+However, sometimes images are not able to load in the docx, so there is an option the save the files separately.<br>
+Each object is saved as a seperate file with the object number used as the file name.<br>
+Text objects that use cmap have multiple files created for every possible mapping found in the file as well as a possible hex mapping.<br>
+Cmap text objects have an aditional part of the name to indicate which mapping was used.<br>
+Please note this means that many cmap files will either have meaningless content or possibly duplicates content.<br>
 Not all image filters are supported however all the image objects are extracted, this means that not all the images are usable.
 
 
