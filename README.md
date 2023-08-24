@@ -3,6 +3,10 @@
 
 This tool recovers content from files encrypted by Ransomware using “intermittent encryption”
 
+For more details please visit our blog post:
+https://www.cyberark.com/resources/threat-research-blog/white-phoenix-beating-intermittent-encryption
+
+
 # Example:
 
 
