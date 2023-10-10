@@ -41,7 +41,7 @@ def argparse():
     parser.add_argument("-s", "--separated-files", required=False, dest="separated_files", action='store_true',
                         help="Extract to separate files")
     parser.add_argument("-v", "--virtual-machine", required=False, dest="vm", action='store_true',
-                        help="Extract to separate files")
+                        help="Extract files from encrypted virtual machines")
     parser.add_argument("-dl", "--disable-log", required=False, dest="disable_log", action='store_true',
                         help="Disable the log")
     parser.add_argument("-d", "--dir", required=False, dest="dir", metavar="FOLDER",
