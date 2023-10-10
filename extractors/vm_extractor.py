@@ -13,21 +13,26 @@ class VMExtractor(Extractor):
         self.initialize_supported_files_dict()
 
     def initialize_supported_files_dict(self):
-          self.files_dict["pdf"] = rb"%PDF-1\.\d" , rb"%EOF\s{,2}\0+"
-          self.files_dict["ooxml"] = rb"PK\x03\x04" , rb"PK\x05\x06.{20}\0"
-
+        """
+        initialize dictionary of supported file formats
+        """
+        self.files_dict["pdf"] = rb"%PDF-1\.\d" , rb"%EOF\s{,2}\0"
+        self.files_dict["zip"] = rb"PK\x03\x04" , rb"PK\x05\x06.{20}\0"
+        self.files_dict["jpg"] = rb"\xff\xd8\xff(\xe0\x00\x10|\xe1)" , rb"\xff\xd9\0"
+        self.files_dict["gif"] = rb"\x47\x49\x46\x38(\x37|\x39)\x61" , rb"\x00\x3b\0"
+          
     def write_file(self,file_type, file_content, i):
+        """
+        write identified files to output folder
+        """
 
-        if file_type == "ooxml":
+        if file_type == "zip":
             if b"word/" in file_content[-2000:]:
                 file_type = "docx"
             elif b"xl/" in file_content[-2000:]:
                 file_type = "xlsx"
             elif b"ppt/" in file_content[-2000:]:
                 file_type = "pptx"
-            else:
-                logging.info("File is not office. Skipping")
-                return
 
         output_name = self.output + "/" + str(hex(threading.current_thread().ident)) + "_" + str(i)+f".{file_type}"
         logging.info(f"writing {output_name}")
@@ -36,7 +41,7 @@ class VMExtractor(Extractor):
 
     def extract_content(self):
         """
-        extract all intetesting content from zip or ziplike format
+        extract all supported file formats from vm files
         """
         for file_type in self.files_dict:
                 i=0
