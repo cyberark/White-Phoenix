@@ -19,13 +19,14 @@ Tested on:
     BlackCat/ALPHV Ransomware, Play Ransomware, Qilin/Agenda Ransomware, BianLian Ransomware, DarkBit
 
 Usage:
-    python3 White-Phoenix.py [-h] [-f/--file FILE] [-s/--separated-files] [-dl/--disable-log] [-d/--dir] -o/--output FOLDER 
+    python3 White-Phoenix.py [-h] [-f/--file FILE] [-s/--separated-files] [-dl/--disable-log] [-d/--dir] [-v/--virtual-machine] -o/--output FOLDER 
 
     -f/--file : path to the encrypted file
     -o/--output : path to folder to save the content extracted from the file
     -s/--separated-files : extract the content to separated files
     -dl/--disale-log : disable the log
     -d/--dir : start scanning from a specific path
+    -v/--virtual machine: Extract files from encrypted virtual machines
     
 
 Currently supported filetypes include:
@@ -70,6 +71,25 @@ Not all image filters are supported however all the image objects are extracted,
 - **Open Office (odt, ods, odp)**
     - [output folder]/content.xml - content of various types
     - [output folder]/media - Images
+
+
+### Virtual Machines Support
+Many ransomware groups maintain a variant of their ransomware specifically meant to target VMs on ESXi servers. White Phoenix has a<br>
+feature to recover data from encrypted vm files. To use the vm feature simply run white phoenix with the flag -v or <br>
+--virtual-machine on files that represent either memory or storage of the virtual machines such as files with the extension vmem or vmdk.<br>
+White Phoenix uses file carving to identify unencrypted files and extract them to disk.<br>
+Please keep in mind that in this method White Phoenix has no way of knowing the names of the files it recovering. Additionally, many files<br>
+are stored on disks and in memory in a somewhat corrupt manner so not everything will be readable once extracted. In some cases files that<br>
+were extrated but aren't readable still contain data that can be recovered by white phoenix. So a file is extracted but not readable it<br>
+might be worth trying to run white phoenix a second time on the newly extracted file.<br><br>
+Supported types for vms:<br>
+- **pdf**
+- **zip**
+- **docx**
+- **xlsx**
+- **pptx**
+- **jpg**
+- **gif**
 
 
 ### License and Copyright
