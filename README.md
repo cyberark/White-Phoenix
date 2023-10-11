@@ -82,14 +82,26 @@ Please keep in mind that in this method White Phoenix has no way of knowing the 
 are stored on disks and in memory in a somewhat corrupt manner so not everything will be readable once extracted. In some cases files that<br>
 were extrated but aren't readable still contain data that can be recovered by white phoenix. So a file is extracted but not readable it<br>
 might be worth trying to run white phoenix a second time on the newly extracted file.<br><br>
+
 Supported types for vms:<br>
-- **pdf**
-- **zip**
-- **docx**
-- **xlsx**
-- **pptx**
-- **jpg**
-- **gif**
+- pdf
+- zip
+- ooxml
+    - docx
+    - xlsx
+    - pptx
+- jpg
+- gif
+
+**Other File Types**
+
+Adding more file types for VMs is relatively simple. What you'll need is the file extension, file magic/header/signature aka the first few <br>
+bytes for that file type, and file ending/footer. A lot of file magics can be found in https://en.wikipedia.org/wiki/List_of_file_signatures. <br>
+Alternatively, you can create a file of the type you're interested in and open it with a hex editor to see the first few bytes. <br>
+The ending can be trickier to find. Some googling might help or you can try the hex editor again and of course there's chat GPT.<br> 
+If you can't find a footer you can use a large collection of null bytes.<br>
+Once you find all the values, open the vm_files.config found in <white phoenix folder>/extractors and update it. The file is a simple json format. <br>
+Keep in mind that the header and footer values are treated as regex values in the code so if you find more than 1 possible value you can use a single entry in the json.
 
 
 ### License and Copyright
