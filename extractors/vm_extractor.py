@@ -2,6 +2,8 @@ import logging
 import re
 from extractors.extractor import Extractor
 import threading
+import json
+import os
 
 
 
@@ -16,10 +18,9 @@ class VMExtractor(Extractor):
         """
         initialize dictionary of supported file formats
         """
-        self.files_dict["pdf"] = rb"%PDF-1\.\d" , rb"%EOF\s{,2}\0"
-        self.files_dict["zip"] = rb"PK\x03\x04" , rb"PK\x05\x06.{20}\0"
-        self.files_dict["jpg"] = rb"\xff\xd8\xff(\xe0\x00\x10|\xe1)" , rb"\xff\xd9\0"
-        self.files_dict["gif"] = rb"\x47\x49\x46\x38(\x37|\x39)\x61" , rb"\x00\x3b\0"
+        with open(os.path.join(os.path.dirname(__file__), "vm_files.config"), "r") as f:
+            self.files_dict = json.load(f)
+
           
     def write_file(self,file_type, file_content, i):
         """
@@ -49,11 +50,11 @@ class VMExtractor(Extractor):
                 start_addr = 0
                 old_addr = 0
                 while start_addr != -1:
-                        file_match = re.search(self.files_dict[file_type][0],self.file_content[old_addr:])
+                        file_match = re.search(bytes(self.files_dict[file_type][0], encoding='UTF-8'),self.file_content[old_addr:])
                         start_addr = file_match.start() if file_match is not None else -1
                         if start_addr != -1:
                                 logging.info(f"found file at {hex(start_addr + old_addr)}")
-                                file_match = re.search(self.files_dict[file_type][1],self.file_content[old_addr + start_addr:])
+                                file_match = re.search(bytes(self.files_dict[file_type][1], encoding='UTF-8'),self.file_content[old_addr + start_addr:])
                                 if file_match is not None:
                                        end_addr = file_match.end()
                                        logging.info(f"found file end at {hex(old_addr + start_addr + end_addr)}")
