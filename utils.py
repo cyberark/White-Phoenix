@@ -40,6 +40,8 @@ def argparse():
                         help="Path to folder to save extracted content")
     parser.add_argument("-s", "--separated-files", required=False, dest="separated_files", action='store_true',
                         help="Extract to separate files")
+    parser.add_argument("-v", "--virtual-machine", required=False, dest="vm", action='store_true',
+                        help="Extract files from encrypted virtual machines")
     parser.add_argument("-dl", "--disable-log", required=False, dest="disable_log", action='store_true',
                         help="Disable the log")
     parser.add_argument("-d", "--dir", required=False, dest="dir", metavar="FOLDER",
@@ -69,7 +71,7 @@ def init_logger(disable_logger):
     if disable_logger is True:
         logging.disable()
     else:
-        logging.basicConfig(level=logging.INFO, format='%(asctime)s %(levelname)s: %(message)s')
+        logging.basicConfig(level=logging.INFO, format='%(asctime)s %(levelname)s %(threadName)s: %(message)s')
         logging.info(logo)
         logging.info("Copyright © 2023 CyberArk Software Ltd. All rights reserved.\n\n")
 
