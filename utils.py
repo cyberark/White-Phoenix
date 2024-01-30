@@ -1,4 +1,3 @@
-import threading
 import zlib
 import logging
 import os
@@ -27,6 +26,7 @@ logo = """
 ⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠁⠻⢘⠐⡐⠄⢂⠢⡐⢐⠀⠀⠀⠀⠀⠀⠀⠀
 ⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠈⠂⠑⠀⠀⠁⠈⠂⠈⠀⠀⠀⠀⠀⠀⠀
 """
+
 
 def argparse():
     """
@@ -121,7 +121,7 @@ def read_file(filename):
     return content
 
 
-def write_raw_file(image_data, obj_num, output, extension=None):
+def write_raw_file(image_data, obj_num, output, file_name, extension=None):
     """
     save binary as is in file
     :param image_data: the binary of the image
@@ -131,14 +131,44 @@ def write_raw_file(image_data, obj_num, output, extension=None):
     """
     if extension is None:
         extension = '.jpg'
-    save_path = os.path.join(output, threading.current_thread().name, str(obj_num) + "_" + threading.current_thread().name + extension)
+    save_path = os.path.join(output, file_name, str(obj_num) + extension)
     image = open(save_path, "wb")
     image.write(image_data)
     image.close()
     return save_path
 
 
-def write_to_file(obj_num, file_content, output_path, file_type, separated_files, document, filter_array=None, mode=None, cmap_len=None, file_name=None):
+def decode_content(file_content):
+    """
+    decode text content
+    :param file_content: the text content of the file
+    :return: return decoded content of the text if succeeded empty if not
+    """
+    content = ""
+    encodings_to_try = [
+        'utf-8', 'latin-1', 'utf-16', 'ascii', 'utf-32', 'cp1252', 'iso-8859-1', 'mac_roman',
+        'utf-16-le', 'utf-16-be', 'utf-7', 'utf-9', 'utf-1', 'utf-32-le', 'utf-32-be',
+        'big5', 'big5hkscs', 'cp037', 'cp273', 'cp424', 'cp437', 'cp500', 'cp775', 'cp850', 'cp852',
+        'cp855', 'cp857', 'cp858', 'cp860', 'cp861', 'cp862', 'cp863', 'cp864', 'cp865', 'cp866',
+        'cp869', 'cp874', 'cp875', 'cp932', 'cp949', 'cp950', 'euc_jp', 'euc_jis_2004', 'euc_jisx0213',
+        'euc_kr', 'gb2312', 'gbk', 'hz', 'iso2022_jp', 'iso2022_jp_1', 'iso2022_jp_2', 'iso2022_jp_2004',
+        'iso2022_jp_3', 'iso2022_jp_ext', 'iso2022_kr', 'iso8859_2', 'iso8859_3', 'iso8859_4', 'iso8859_5',
+        'iso8859_6', 'iso8859_7', 'iso8859_8', 'iso8859_9', 'iso8859_10', 'iso8859_11', 'iso8859_13',
+        'iso8859_14', 'iso8859_15', 'iso8859_16', 'koi8_r', 'koi8_u', 'mbcs', 'ptcp154', 'shift_jis',
+        'shift_jis_2004', 'shift_jisx0213', 'tactis', 'tis-620', 'utf_7', 'utf_8_sig'
+    ]
+    for encoding in encodings_to_try:
+        try:
+            content = file_content.decode(encoding)
+            break
+        except Exception as e:
+            logging.info(f"Failed to decode using {e}")
+            content = ""
+    return content
+
+
+def write_to_file(obj_num, file_content, output_path, file_type, separated_files, document, filter_array=None,
+                  mode=None, cmap_len=None, file_name=None):
     """
     write extracted content to file
     :param obj_num: the object from which the content was extracted
@@ -154,46 +184,52 @@ def write_to_file(obj_num, file_content, output_path, file_type, separated_files
     :return:
     """
     if file_type == "text":
+        content = decode_content(file_content)
         if separated_files:
-            dir_path = os.path.join(output_path, file_name.replace(os.sep, '_').replace('.', '_'))
+            dir_path = os.path.join(output_path, os.path.split(file_name)[-1].replace('.', '_'))
             if not os.path.exists(dir_path):
                 os.mkdir(os.path.join(dir_path))
-            with open(os.path.join(dir_path, str(obj_num) + '.txt'), 'w+') as txt_file:
-                txt_file.write(file_content.decode())
+            try:
+                with open(os.path.join(dir_path, str(obj_num) + '.txt'), 'w+') as txt_file:
+                    txt_file.write(content)
+            except:
+                pass
         else:
-            document.add_paragraph(file_content.decode())
+            try:
+                document.add_paragraph(content)
+            except:
+                logging.error(f"Couldn't insert object number {obj_num} to docx file")
     else:
-        temp_file_path = os.path.join(os.getcwd(), 'temp')
         if '/DCTDecode' in filter_array:
-            temp_image_file_name = save_jpeg_image(file_content, mode, obj_num, temp_file_path)
+            file_path = save_jpeg_image(file_content, mode, obj_num, output_path,
+                                                   os.path.split(file_name)[-1].replace('.', '_'))
         elif '/JPXDecode' in filter_array:
-            temp_image_file_name = write_raw_file(file_content, obj_num, temp_file_path, '.jp2')
+            file_path = write_raw_file(file_content, obj_num, output_path,
+                                                  os.path.split(file_name)[-1].replace('.', '_'), '.jp2')
         else:
-            temp_image_file_name = write_raw_file(file_content, obj_num, temp_file_path)
+            file_path = write_raw_file(file_content, obj_num, output_path,
+                                                  os.path.split(file_name)[-1].replace('.', '_'))
         if separated_files is not True:
             try:
                 document.add_paragraph()
-                document.add_picture(temp_image_file_name)
+                document.add_picture(file_path)
             except Exception as e:
-                logging.error(f'{e} in object number {str(obj_num)}')
-        else:
-            dir_path = os.path.join(output_path, file_name.replace(os.sep, '_').replace('.', '_'))
-            if not os.path.exists(dir_path):
-                os.mkdir(os.path.join(dir_path))
-            os.replace(temp_image_file_name, os.path.join(dir_path, temp_image_file_name.replace(threading.current_thread().name, "").replace(os.sep, '_').replace('.', '_')))
+                logging.error(f"{e}: Couldn't add object number {str(obj_num)} to docx")
+            os.remove(file_path)
 
     log = f"Extracted {file_type} content from object {obj_num}" if (cmap_len is None) else \
         f"Extracted {file_type} content from object {obj_num} with cmap from {cmap_len}"
     logging.info(log)
 
 
-def save_jpeg_image(image_content, mode, obj_num, output):
+def save_jpeg_image(image_content, mode, obj_num, output, file_name):
     """
     get jpeg image object
     :param image_content: the byte array of the image
     :param mode: mode of the image
     :param obj_num: the number of the object
     :param output: the output path of the file
+    :param file_name: the name of the file
     """
     jpg_data = BytesIO(image_content)
     try:
@@ -205,13 +241,22 @@ def save_jpeg_image(image_content, mode, obj_num, output):
         inv_data = np.full(im_data.shape, 255, dtype='B')
         inv_data -= im_data
         image = Image.frombytes(image.mode, image.size, inv_data.tobytes())
-    save_path = os.path.join(output, threading.current_thread().name, str(obj_num) + threading.current_thread().name + ".jpg")
+    save_path = os.path.join(output, file_name)
+    os.makedirs(save_path, exist_ok=True)
+    save_path = os.path.join(save_path, str(obj_num) + ".jpg")
     image.save(save_path)
+    image.close()
     return save_path
 
 
 def save_doc_file(output, filename, document):
-    dir_path = os.path.join(output, filename.replace(os.sep, '_').replace('.', '_').replace(":", "_"))
+    """
+    save to docx file
+    :param output: the output path of the file
+    :param filename: the name of the file
+    :param document: type var of docx
+    """
+    dir_path = os.path.join(output, os.path.split(filename)[-1].replace('.', '_'))
     if not os.path.exists(dir_path):
         os.mkdir(dir_path)
-    document.save(os.path.join(dir_path, filename.replace(os.sep, '_').replace('.', '_').replace(":", "_") + '.docx'))
+    document.save(os.path.join(dir_path, os.path.split(filename)[-1].replace('.', '_') + '.docx'))

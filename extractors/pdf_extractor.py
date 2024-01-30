@@ -20,11 +20,11 @@ class PdfExtractor(Extractor):
         self.merged_cmap = dict()
         self.separated_files = separated_files
         self.helper_pdf = 'helper.pdf'
-        self.temp_pdf = os.path.join('temp', threading.current_thread().name, threading.current_thread().name + '_temp.pdf')
+        self.temp_pdf = os.path.join('temp', os.path.split(filename)[-1].replace('.', '_'), '_temp.pdf')
         self.binary_to_replace = b'AABBAA'
         self.original_binary_to_replace = b'AABBAA'
         self.document = Document()
-        os.mkdir(os.path.join('.', 'temp', threading.current_thread().name))
+        os.mkdir(os.path.join('.', 'temp', os.path.split(filename)[-1].replace('.', '_')))
 
     def extract_content(self):
         """
@@ -53,7 +53,10 @@ class PdfExtractor(Extractor):
         :return:
         """
         self.save_image_in_temp_pdf(pdf_object)
-        self.extract_image(obj_num)
+        try:
+            self.extract_image(obj_num)
+        except:
+            logging.error(f"Didn't extract image with obj num {obj_num}")
 
     def extract_image(self, obj_num):
         """
@@ -65,6 +68,7 @@ class PdfExtractor(Extractor):
             pdf_reader = PyPDF2.PdfReader(pdf)
         except Exception as e:
             logging.error(e)
+            pdf.close()
             return
         for page_num in range(0, len(pdf_reader.pages)):
             page_obj = pdf_reader.pages[page_num]
@@ -79,12 +83,13 @@ class PdfExtractor(Extractor):
                     filter_array = image_stream.get("/Filter", ())
                     image_data = self.decode_image(image_stream._data, filter_array)
                     utils.write_to_file(obj_num, image_data, self.output, 'image', self.separated_files,
-                                        document=self.document, filter_array=filter_array, mode=mode, file_name=self.filename)
+                                        document=self.document, filter_array=filter_array, mode=mode,
+                                        file_name=self.filename)
         pdf.close()
 
     def save_image_in_temp_pdf(self, image_content):
         """
-        saving the image in a temporary
+        saving the image in a temporary PDF
         :param image_content: the image content
         """
         image_content = image_content[image_content.find(b'<<'):]
@@ -170,7 +175,8 @@ class PdfExtractor(Extractor):
                 extracted_text += s[i].to_bytes(1, 'big')
 
         if len(extracted_text.strip()) > 0:
-            utils.write_to_file(obj_num, extracted_text, self.output, "text", self.separated_files, self.document, file_name=self.filename)
+            utils.write_to_file(obj_num, extracted_text, self.output, "text", self.separated_files, self.document,
+                                file_name=self.filename)
 
     def extract_text_mapped(self, obj_num):
         """
@@ -215,7 +221,11 @@ class PdfExtractor(Extractor):
                 logging.debug(f"Could not find key:{key_value} in cmaps with the length of {key_len}")
         extracted_text = binascii.unhexlify(unmapped_content)
         decoded_extracted_text = extracted_text.decode('utf-16-be')
-        return decoded_extracted_text.encode('utf-8')
+        try:
+            return decoded_extracted_text.encode('utf-8')
+        except Exception as e:
+            logging.error(e)
+            return decoded_extracted_text
 
     def get_mapped_keys(self, mapped_content, key_len, obj_num):
         """
