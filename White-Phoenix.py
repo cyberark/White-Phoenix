@@ -59,7 +59,7 @@ def extract_data_from_file(output, separated_files, file_path, is_vm):
     extractor.extract_content()
 
 
-def find_all_files_path(folder_path, output,vm):
+def find_all_files_path(folder_path, output, vm):
     fifo_queue = queue.Queue()
     for root, dirs, files in os.walk(folder_path):
         for file in files:
@@ -82,6 +82,8 @@ def main():
     global path_queue
     if os.path.exists('temp') is not True:
         os.mkdir('temp')
+    else:
+        delete_folder_contents('temp')
     args = utils.argparse()
     utils.init_logger(args.disable_log)
     if args.filename:
@@ -99,7 +101,10 @@ def main():
             lock.release()
             thread_pool.submit(extract_data_from_file, args.output, args.separated_files, file_path, args.vm)
         thread_pool.shutdown(wait=True)
-    delete_folder_contents('temp')
+    try:
+        delete_folder_contents('temp')
+    except Exception as e:
+        logging.error(e)
 
 
 if __name__ == '__main__':
