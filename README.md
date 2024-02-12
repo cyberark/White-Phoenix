@@ -35,7 +35,8 @@ Currently supported filetypes include:
     'xlsx', 'xlsm', 'xltx', 'xltm', 'xlsb', 'xlam', 'ods'
     'pptx', 'pptm', 'ptox', 'potm', 'ppsx', 'ppsm', 'odp'
     'zip'
-
+    
+**Disclaimer: White Phoenix is not a magic cure for ransomware. Most files are not going to be recoverable unfortunately. The larger the file the better the odds White Phoenix can recover some data.**
 
 ### Output files
 
