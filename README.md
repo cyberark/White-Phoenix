@@ -35,7 +35,8 @@ Currently supported filetypes include:
     'xlsx', 'xlsm', 'xltx', 'xltm', 'xlsb', 'xlam', 'ods'
     'pptx', 'pptm', 'ptox', 'potm', 'ppsx', 'ppsm', 'odp'
     'zip'
-
+    
+**Disclaimer: Not all files that were encrypted with intermittent encryption will have data that can be recovered. In general, the larger the file the more likely it is that there will be data that can be recovered.**
 
 ### Output files
 
