@@ -36,7 +36,7 @@ Currently supported filetypes include:
     'pptx', 'pptm', 'ptox', 'potm', 'ppsx', 'ppsm', 'odp'
     'zip'
     
-**Disclaimer: White Phoenix is not a magic cure for ransomware. Most files are not going to be recoverable unfortunately. The larger the file the better the odds White Phoenix can recover some data.**
+**Disclaimer: Not all files that were encrypted with intermittent encryption will have data that can be recovered. In general, the larger the file the more likely it is that there will be data that can be recovered.**
 
 ### Output files
 
